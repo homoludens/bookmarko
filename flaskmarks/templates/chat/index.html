@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 
+{% block scripts %}
+{{ super() }}
+<!-- Marked.js for markdown rendering -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="container" role="main">
     {% include "flash.html" %}
@@ -27,10 +33,11 @@
                             <div class="message-content p-3 rounded">
                                 {% if msg.role == 'user' %}
                                 <strong>You:</strong>
+                                <p class="mb-0 mt-2">{{ msg.content }}</p>
                                 {% else %}
                                 <strong>Assistant:</strong>
+                                <div class="mb-0 mt-2 markdown-content">{{ msg.content }}</div>
                                 {% endif %}
-                                <p class="mb-0 mt-2">{{ msg.content }}</p>
                             </div>
                         </div>
                         {% endfor %}
@@ -89,8 +96,52 @@
     margin-right: 20%;
 }
 
-.message-content p {
+.message-user .message-content p {
     white-space: pre-wrap;
+}
+
+/* Markdown content styling */
+.markdown-content {
+    line-height: 1.6;
+}
+
+.markdown-content p {
+    margin-bottom: 0.5rem;
+}
+
+.markdown-content p:last-child {
+    margin-bottom: 0;
+}
+
+.markdown-content ul, .markdown-content ol {
+    margin-bottom: 0.5rem;
+    padding-left: 1.5rem;
+}
+
+.markdown-content code {
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.markdown-content pre {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 0.5rem;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+.markdown-content pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+.markdown-content blockquote {
+    border-left: 3px solid #dee2e6;
+    padding-left: 1rem;
+    margin-left: 0;
+    color: #6c757d;
 }
 
 #queryInput {
@@ -130,6 +181,15 @@ document.addEventListener('DOMContentLoaded', function() {
         return div.innerHTML;
     }
 
+    // Render markdown using marked.js
+    function renderMarkdown(text) {
+        if (typeof marked !== 'undefined') {
+            return marked.parse(text);
+        }
+        // Fallback if marked not loaded
+        return escapeHtml(text).replace(/\n/g, '<br>');
+    }
+
     // Add message to chat
     function addMessage(role, content) {
         if (emptyState) {
@@ -137,15 +197,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const label = role === 'user' ? 'You' : 'Assistant';
-
         const messageDiv = document.createElement('div');
         messageDiv.className = `message message-${role} mb-3`;
-        messageDiv.innerHTML = `
-            <div class="message-content p-3 rounded">
-                <strong>${label}:</strong>
-                <p class="mb-0 mt-2">${escapeHtml(content).replace(/\n/g, '<br>')}</p>
-            </div>
-        `;
+
+        if (role === 'user') {
+            messageDiv.innerHTML = `
+                <div class="message-content p-3 rounded">
+                    <strong>${label}:</strong>
+                    <p class="mb-0 mt-2">${escapeHtml(content).replace(/\n/g, '<br>')}</p>
+                </div>
+            `;
+        } else {
+            messageDiv.innerHTML = `
+                <div class="message-content p-3 rounded">
+                    <strong>${label}:</strong>
+                    <div class="mb-0 mt-2 markdown-content">${renderMarkdown(content)}</div>
+                </div>
+            `;
+        }
+
         chatMessages.appendChild(messageDiv);
         scrollToBottom();
     }
@@ -245,6 +315,13 @@ document.addEventListener('DOMContentLoaded', function() {
             location.reload();
         } catch (error) {
             console.error('Clear error:', error);
+        }
+    });
+
+    // Render markdown for existing assistant messages on page load
+    document.querySelectorAll('.message-assistant .markdown-content').forEach(function(el) {
+        if (typeof marked !== 'undefined') {
+            el.innerHTML = marked.parse(el.textContent);
         }
     });
 
