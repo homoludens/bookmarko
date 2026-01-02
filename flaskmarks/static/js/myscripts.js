@@ -1,27 +1,40 @@
-$(function(){
+document.addEventListener('DOMContentLoaded', function() {
 
-    $('.clickIncrement').on('click', function(){
-        var id = $(this).attr('data-id');
-        url = $(this).attr('data-url');
-        $.ajax({
-          url: url,
-          data: {id : id},
-          type: 'GET',
-          dataType: 'json',
-          success: function(data) {
-              if (data.status == 'success') {
-                  return
-              }
-          }
+    // Handle click increment for bookmarks
+    document.querySelectorAll('.clickIncrement').forEach(function(element) {
+        element.addEventListener('click', function() {
+            var id = this.getAttribute('data-id');
+            var url = this.getAttribute('data-url');
+            
+            fetch(url + '?' + new URLSearchParams({id: id}), {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.status === 'success') {
+                    return;
+                }
+            })
+            .catch(function(error) {
+                console.error('Error:', error);
+            });
         });
     });
 
-    $('.delete').on('click', function(){
-        if (confirm('Are you sure you want to delete this?')) {
+    // Handle delete confirmation
+    document.querySelectorAll('.delete').forEach(function(element) {
+        element.addEventListener('click', function(event) {
+            if (!confirm('Are you sure you want to delete this?')) {
+                event.preventDefault();
+                return false;
+            }
             return true;
-        } else {
-            return false;
-        }
+        });
     });
 
 });

@@ -1,10 +1,23 @@
 @charset "UTF-8";
-/* CSS Document */
+/* CSS Document - Bootstrap 5 compatible */
+
 img {
     vertical-align: middle;
-    width: 90%;
+    max-width: 90%;
 }
 
 .container .full_html {
     white-space: pre-wrap;
+}
+
+/* Ensure proper spacing for list group items */
+.list-group-item h4,
+.list-group-item h5 {
+    margin-bottom: 0;
+}
+
+/* Stats list styling for feed views */
+.statslist {
+    font-size: 0.875rem;
+    color: #6c757d;
 }

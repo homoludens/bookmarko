@@ -6,7 +6,7 @@
             {% if mark.tags %}
                 <div class="btn-group">
                     {% for t in mark.tags %}
-                        <a href="{{ url_for('marks.mark_q_tag', slug=t.title) }}" class="btn btn-default btn-xs btn-primary" role="button">{{ t.title }}</a>
+                        <a href="{{ url_for('marks.mark_q_tag', slug=t.title) }}" class="btn btn-primary btn-sm" role="button">{{ t.title }}</a>
                     {% endfor %}
                 </div>
             {% endif %}
@@ -14,44 +14,44 @@
         <div class="row">
             {% for i, entry in data['entries'] | enumerate %}
             <div class="col-sm-9 col-md-6">
-                <div class="thumbnail">
+                <div class="card mb-3">
                     {% if entry['media_thumbnail'] %}
-                        <img class="media-object img-rounded img-responsive" src="{{ entry['media_thumbnail'][0]['url'] }}" alt="thumbnail">
+                        <img class="card-img-top img-fluid rounded" src="{{ entry['media_thumbnail'][0]['url'] }}" alt="thumbnail">
                     {% endif %}
-                    <div class="caption">
+                    <div class="card-body">
                         <ul class='statslist list-inline'>
-                            <li class='date'>{{ entry['published'] | datewordsstr }} ago</li>
+                            <li class='list-inline-item date'>{{ entry['published'] | datewordsstr }} ago</li>
                             {% if entry['yt_statistics'] %}
-                                <li class='viewcount'>{{ entry['yt_statistics']['viewcount'] | thousandsep }} views</li>
+                                <li class='list-inline-item viewcount'>{{ entry['yt_statistics']['viewcount'] | thousandsep }} views</li>
                             {% endif %}
                             {% if entry['gd_rating'] %}
-                                <li class='votes'>&hearts;{{ entry['gd_rating']['numraters'] | thousandsep }}</li>
+                                <li class='list-inline-item votes'>&hearts;{{ entry['gd_rating']['numraters'] | thousandsep }}</li>
                             {% endif %}
-                            <li class='duration'>{{ entry['yt_duration']['seconds'] | sectomin}} min</li>
+                            <li class='list-inline-item duration'>{{ entry['yt_duration']['seconds'] | sectomin}} min</li>
                         </ul>
                         {% for link in entry['links'] %}
                             {% if link['rel'] == 'alternate' or link['rel'] == 'enclosure'%}
-                                <h3><a href="{{ link['href'] }}" title="{{ entry['title'] }}">{{ entry['title'] | truncate(37) }}</a></h3>
+                                <h5 class="card-title"><a href="{{ link['href'] }}" title="{{ entry['title'] }}">{{ entry['title'] | truncate(37) }}</a></h5>
                             {% endif %}
                         {% endfor %}
                         <p>
                             <!-- Button trigger modal -->
-                            <button class="btn btn-primary btn-sm btn-block" data-toggle="modal" data-target="#desc-{{i}}-Modal">
+                            <button class="btn btn-primary btn-sm d-block w-100" data-bs-toggle="modal" data-bs-target="#desc-{{i}}-Modal">
                                 More info
                             </button>
                             <!-- Modal -->
-                            <div class="modal fade" id="desc-{{i}}-Modal" tabindex="-1" role="dialog" aria-labelledby="desc-{{i}}-ModalLabel" aria-hidden="true">
+                            <div class="modal fade" id="desc-{{i}}-Modal" tabindex="-1" aria-labelledby="desc-{{i}}-ModalLabel" aria-hidden="true">
                                 <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                                            <h4 class="modal-title" id="desc-{{i}}-ModalLabel">{{ entry['title'] }}</h4>
+                                            <h5 class="modal-title" id="desc-{{i}}-ModalLabel">{{ entry['title'] }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
                                             <pre>{{ entry['summary'] }}</pre>
                                         </div>
                                         <div class="modal-footer">
-                                            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                         </div>
                                     </div>
                                 </div>

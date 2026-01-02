@@ -3,18 +3,18 @@
     <li class="list-group-item">
         <h4 class="list-group-item-heading">
             {% if mark.type not in mark.valid_feed_types %}
-            <a class="list-group-item list-group-item-default clickIncrement" href="{{ url_for('marks.mark_redirect', id=mark.id) }}" target="_blank" data-id="{{ mark.id }}" data-url="/mark/inc" rel="noreferrer">
-                <span class="badge">{{ mark.clicks }}</span>
-                <span class="glyphicon glyphicon-link"></span>
+            <a class="list-group-item list-group-item-action clickIncrement" href="{{ url_for('marks.mark_redirect', id=mark.id) }}" target="_blank" data-id="{{ mark.id }}" data-url="/mark/inc" rel="noreferrer">
+                <span class="badge bg-secondary">{{ mark.clicks }}</span>
+                <i class="bi bi-link-45deg"></i>
                 {{ mark.title|truncate(82) }}
             </a>
             {% elif mark.type in mark.valid_feed_types %}
-            <a class="list-group-item list-group-item-default clickIncrement" href="{{ url_for('marks.view_mark', id=mark.id, type=mark.type) }}" data-id="{{ mark.id }}" data-url="/mark/inc">
-                <span class="badge">{{ mark.clicks }}</span>
+            <a class="list-group-item list-group-item-action clickIncrement" href="{{ url_for('marks.view_mark', id=mark.id, type=mark.type) }}" data-id="{{ mark.id }}" data-url="/mark/inc">
+                <span class="badge bg-secondary">{{ mark.clicks }}</span>
                 {% if mark.type == 'youtube' %}
-                    <span class="glyphicon glyphicon-film"></span>
+                    <i class="bi bi-film"></i>
                 {% else %}
-                    <span class="glyphicon glyphicon-tree-deciduous"></span>
+                    <i class="bi bi-rss"></i>
                 {% endif %}
                 {{ mark.title|truncate(82) }}
             </a>
@@ -26,47 +26,51 @@
         {% endif %}
 
         {% if mark.tags %}
-            <div class="btn-toolbar btn-group-xs" role="toolbar">
-                <div class="btn-group btn-group-xs">
+            <div class="btn-toolbar mt-2" role="toolbar">
+                <div class="btn-group btn-group-sm me-2">
                     {% for m in mark.tags %}
-                        <a href="{{ url_for('marks.mark_q_tag', slug=m.title) }}" class="btn btn-default"><span class="glyphicon glyphicon-tag"></span> {{ m.title }}</a>
+                        <a href="{{ url_for('marks.mark_q_tag', slug=m.title) }}" class="btn btn-outline-secondary"><i class="bi bi-tag"></i> {{ m.title }}</a>
                     {% endfor %}
                 </div>
-                <a href="{{ url_for('marks.edit_mark', id=mark.id) }}" class="btn btn-default"><span class="glyphicon glyphicon-edit"></span> edit</a>
-                <a href="{{ url_for('marks.view_html_mark', id=mark.id) }}" class="btn btn-default"><span class="glyphicon glyphicon-globe"></span> View html</a>
+                <a href="{{ url_for('marks.edit_mark', id=mark.id) }}" class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-pencil"></i> edit</a>
+                <a href="{{ url_for('marks.view_html_mark', id=mark.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-globe"></i> View html</a>
             </div>
         {% endif %}
     </li>
     {% endfor %}
 </ul>
 
-<ul class="pager">
-{% if marks.has_prev %}
-    <li><a href="{{ url_for(request.endpoint, slug=request.view_args.get('slug'), page=marks.prev_num, q=request.args.get('q'), type=request.args.get('type')) }}">Previous</a></li>
-{% endif %}
-{% if marks.has_next %}
-    <li><a href="{{ url_for(request.endpoint, slug=request.view_args.get('slug'), page=marks.next_num, q=request.args.get('q'), type=request.args.get('type')) }}">Next</a></li>
-{% endif %}
-</ul>
+<nav aria-label="Page navigation">
+    <ul class="pagination">
+    {% if marks.has_prev %}
+        <li class="page-item"><a class="page-link" href="{{ url_for(request.endpoint, slug=request.view_args.get('slug'), page=marks.prev_num, q=request.args.get('q'), type=request.args.get('type')) }}">Previous</a></li>
+    {% endif %}
+    {% if marks.has_next %}
+        <li class="page-item"><a class="page-link" href="{{ url_for(request.endpoint, slug=request.view_args.get('slug'), page=marks.next_num, q=request.args.get('q'), type=request.args.get('type')) }}">Next</a></li>
+    {% endif %}
+    </ul>
+</nav>
 
 
 {% macro render_pagination(pagination, endpoint) %}
-  <div class=page-items>
+  <div class="page-items text-muted mb-2">
     {{ pagination.first }} - {{ pagination.last }} of {{ pagination.total }}
   </div>
-  <div class=pagination>
+  <nav aria-label="Page navigation">
+    <ul class="pagination">
     {% for page in pagination.iter_pages() %}
       {% if page %}
         {% if page != pagination.page %}
-          <a href="{{ url_for(endpoint, slug=request.view_args.get('slug'), page=page) }}">{{ page }}</a>
+          <li class="page-item"><a class="page-link" href="{{ url_for(endpoint, slug=request.view_args.get('slug'), page=page) }}">{{ page }}</a></li>
         {% else %}
-          <strong>{{ page }}</strong>
+          <li class="page-item active" aria-current="page"><a class="page-link" href="#">{{ page }}</a></li>
         {% endif %}
       {% else %}
-        <span class=ellipsis>…</span>
+        <li class="page-item disabled"><span class="page-link">…</span></li>
       {% endif %}
     {% endfor %}
-  </div>
+    </ul>
+  </nav>
 {% endmacro %}
 
 {{ render_pagination(marks, request.endpoint)}}

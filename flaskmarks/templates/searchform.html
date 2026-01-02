@@ -1,6 +1,4 @@
-<form class="navbar-form navbar-left" role="search" action="{{ url_for('marks.search_string')}}" method="GET">
-    <div class="form-group">
-        <input type="text" class="form-control" placeholder="Search" name="q" value="{{ request.args['q'] }}">
-    </div>
-    <button type="submit" class="btn btn-default">Search</button>
+<form class="d-flex" role="search" action="{{ url_for('marks.search_string')}}" method="GET">
+    <input class="form-control me-2" type="search" placeholder="Search" name="q" value="{{ request.args.get('q', '') }}" aria-label="Search">
+    <button class="btn btn-outline-light" type="submit">Search</button>
 </form>

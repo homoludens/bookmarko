@@ -4,7 +4,7 @@
         {% include "flash.html" %}
         {% if tags %}
             {% for t in tags %}
-                <a href="{{ url_for('marks.mark_q_tag', slug=t.title) }}"><span class="label label-primary">{{ t.title }}</span></a>
+                <a href="{{ url_for('marks.mark_q_tag', slug=t.title) }}"><span class="badge bg-primary">{{ t.title }}</span></a>
             {% endfor %}
         {% else %}
             <h3>No tags</h3>
