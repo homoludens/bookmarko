@@ -8,6 +8,7 @@ flask-bcrypt>=1.0.1
 flask-bootstrap>=3.3.7.1
 flask-wtf>=1.2.1
 flask-cors>=4.0.0
+flask-swagger-ui>=4.11.1
 werkzeug>=3.0.0
 python-dotenv>=1.0.0
 

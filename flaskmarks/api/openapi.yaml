@@ -1,0 +1,1318 @@
+openapi: 3.0.3
+info:
+  title: Bookmarko API
+  description: |
+    REST API for Bookmarko - a bookmark management application with tagging, search, and AI-powered features.
+    
+    ## Authentication
+    
+    All endpoints except `/auth/token` and `/bookmarklet/script` require authentication via Bearer token.
+    
+    To authenticate:
+    1. Obtain a token by calling `POST /auth/token` with your credentials
+    2. Include the token in subsequent requests: `Authorization: Bearer <token>`
+    
+    Tokens expire after 24 hours. Use `/auth/refresh` to get a new token.
+    
+    ## Quick Add for Browser Extensions
+    
+    The `/quickadd` endpoint is optimized for browser extensions and bookmarklets.
+    It accepts multiple input formats (JSON, form data, query parameters) and
+    performs async metadata extraction in the background.
+    
+  version: 1.0.0
+  contact:
+    name: Bookmarko Support
+  license:
+    name: MIT
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+tags:
+  - name: Authentication
+    description: Token-based authentication endpoints
+  - name: Marks
+    description: Bookmark/mark CRUD operations
+  - name: Tags
+    description: Tag management endpoints
+  - name: Quick Add
+    description: Browser extension and bookmarklet support
+
+paths:
+  # Authentication
+  /auth/token:
+    post:
+      tags:
+        - Authentication
+      summary: Obtain API token
+      description: Authenticate with username/email and password to receive an API token.
+      operationId: getToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  description: Username or email address
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  description: User password
+                  example: secretpassword
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/verify:
+    get:
+      tags:
+        - Authentication
+      summary: Verify token validity
+      description: Check if the current token is valid and get user info.
+      operationId: verifyToken
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/UserInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh token
+      description: Get a new token with extended expiration.
+      operationId: refreshToken
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token:
+                            type: string
+                            example: "1:1704067200:abc123def456..."
+                          expires_in:
+                            type: integer
+                            example: 86400
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # Marks
+  /marks:
+    get:
+      tags:
+        - Marks
+      summary: List all marks
+      description: Get a paginated list of all marks for the authenticated user.
+      operationId: listMarks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Items per page (max 100)
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [bookmark, feed, youtube]
+          description: Filter by mark type
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [clicks, created, updated]
+            default: clicks
+          description: Sort order
+      responses:
+        '200':
+          description: List of marks
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          marks:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Mark'
+                          pagination:
+                            $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Marks
+      summary: Create a new mark
+      description: Create a new bookmark, feed, or YouTube mark.
+      operationId: createMark
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarkCreate'
+      responses:
+        '201':
+          description: Mark created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Mark'
+                      message:
+                        type: string
+                        example: Mark created successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Duplicate URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /marks/{mark_id}:
+    get:
+      tags:
+        - Marks
+      summary: Get a specific mark
+      description: Retrieve a single mark by ID.
+      operationId: getMark
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MarkId'
+        - name: include_html
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include full HTML content
+      responses:
+        '200':
+          description: Mark details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Mark'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Marks
+      summary: Update a mark
+      description: Update an existing mark. Only provided fields are updated.
+      operationId: updateMark
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MarkId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarkUpdate'
+      responses:
+        '200':
+          description: Mark updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Mark'
+                      message:
+                        type: string
+                        example: Mark updated successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Duplicate URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags:
+        - Marks
+      summary: Delete a mark
+      description: Permanently delete a mark.
+      operationId: deleteMark
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MarkId'
+      responses:
+        '200':
+          description: Mark deleted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Mark deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /marks/{mark_id}/click:
+    post:
+      tags:
+        - Marks
+      summary: Record a click
+      description: Increment the click counter for a mark.
+      operationId: recordClick
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MarkId'
+      responses:
+        '200':
+          description: Click recorded
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          clicks:
+                            type: integer
+                            example: 5
+                      message:
+                        type: string
+                        example: Click recorded
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /marks/search:
+    get:
+      tags:
+        - Marks
+      summary: Search marks
+      description: Search marks by title, description, or URL.
+      operationId: searchMarks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+          example: python tutorial
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [bookmark, feed, youtube]
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          query:
+                            type: string
+                            example: python tutorial
+                          marks:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Mark'
+                          pagination:
+                            $ref: '#/components/schemas/Pagination'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /marks/by-tag/{tag_slug}:
+    get:
+      tags:
+        - Marks
+      summary: Get marks by tag
+      description: Get all marks with a specific tag.
+      operationId: getMarksByTag
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tag_slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tag name/slug
+          example: python
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Marks with tag
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          tag:
+                            type: string
+                            example: python
+                          marks:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Mark'
+                          pagination:
+                            $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /marks/export:
+    get:
+      tags:
+        - Marks
+      summary: Export all marks
+      description: Export all marks as JSON for backup or migration.
+      operationId: exportMarks
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: All marks exported
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          marks:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Mark'
+                          total:
+                            type: integer
+                            example: 150
+                          exported_at:
+                            type: string
+                            format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /marks/stats:
+    get:
+      tags:
+        - Marks
+      summary: Get mark statistics
+      description: Get statistics about the user's marks.
+      operationId: getStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Mark statistics
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                            example: 150
+                          by_type:
+                            type: object
+                            properties:
+                              bookmark:
+                                type: integer
+                                example: 120
+                              feed:
+                                type: integer
+                                example: 25
+                              youtube:
+                                type: integer
+                                example: 5
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # Tags
+  /tags:
+    get:
+      tags:
+        - Tags
+      summary: List all tags
+      description: Get a paginated list of tags used by the authenticated user.
+      operationId: listTags
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [title, count]
+            default: title
+          description: Sort by tag title or usage count
+      responses:
+        '200':
+          description: List of tags
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          tags:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/TagWithCount'
+                          pagination:
+                            $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Tags
+      summary: Create a tag
+      description: Pre-create a tag. Tags are typically created automatically when adding marks.
+      operationId: createTag
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                  example: python
+      responses:
+        '201':
+          description: Tag created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Tag'
+                      message:
+                        type: string
+                        example: Tag created successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Tag already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /tags/{tag_id}:
+    get:
+      tags:
+        - Tags
+      summary: Get a specific tag
+      description: Get tag details by ID.
+      operationId: getTag
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TagId'
+      responses:
+        '200':
+          description: Tag details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TagWithCount'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Tags
+      summary: Rename a tag
+      description: Update a tag's title.
+      operationId: updateTag
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TagId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                  example: python3
+      responses:
+        '200':
+          description: Tag updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TagWithCount'
+                      message:
+                        type: string
+                        example: Tag updated successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Tag name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags:
+        - Tags
+      summary: Remove tag from marks
+      description: Remove a tag from all user's marks. The tag itself remains in the database.
+      operationId: deleteTag
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TagId'
+      responses:
+        '200':
+          description: Tag removed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Tag removed from 15 marks
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tags/cloud:
+    get:
+      tags:
+        - Tags
+      summary: Get tag cloud
+      description: Get all tags with their usage counts, sorted by popularity.
+      operationId: getTagCloud
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Tag cloud data
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          tags:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/TagWithCount'
+                          total:
+                            type: integer
+                            example: 50
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # Quick Add
+  /quickadd:
+    post:
+      tags:
+        - Quick Add
+      summary: Quick add bookmark
+      description: |
+        Quickly save a bookmark from a browser extension or bookmarklet.
+        
+        Supports multiple input formats:
+        - JSON body
+        - Form data
+        - Query parameters
+        
+        Metadata extraction happens asynchronously in the background.
+      operationId: quickAdd
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuickAddRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                title:
+                  type: string
+                description:
+                  type: string
+                tags:
+                  type: string
+                  description: Comma-separated tags
+      responses:
+        '201':
+          description: Bookmark saved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/QuickAddResponse'
+                      message:
+                        type: string
+                        example: Bookmark saved
+        '200':
+          description: Bookmark already exists
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/QuickAddResponse'
+                      message:
+                        type: string
+                        example: Bookmark already exists
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    get:
+      tags:
+        - Quick Add
+      summary: Quick add via GET
+      description: Quick add via GET request for simple bookmarklet support.
+      operationId: quickAddGet
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+          description: URL to bookmark
+        - name: title
+          in: query
+          schema:
+            type: string
+          description: Page title
+        - name: tags
+          in: query
+          schema:
+            type: string
+          description: Comma-separated tags
+      responses:
+        '201':
+          description: Bookmark saved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/QuickAddResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /quickadd/status/{mark_id}:
+    get:
+      tags:
+        - Quick Add
+      summary: Check quick-add status
+      description: Check the status of a quick-added bookmark and get updated metadata.
+      operationId: quickAddStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MarkId'
+      responses:
+        '200':
+          description: Bookmark status
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          url:
+                            type: string
+                          title:
+                            type: string
+                          description:
+                            type: string
+                          tags:
+                            type: array
+                            items:
+                              type: string
+                          has_content:
+                            type: boolean
+                          created:
+                            type: string
+                            format: date-time
+                          updated:
+                            type: string
+                            format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /bookmarklet/script:
+    get:
+      tags:
+        - Quick Add
+      summary: Get bookmarklet script
+      description: |
+        Generate a bookmarklet script for quick saving.
+        
+        **Note:** This endpoint does not require authentication.
+        The token is embedded in the generated bookmarklet.
+      operationId: getBookmarkletScript
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: API token to embed in bookmarklet
+        - name: server
+          in: query
+          schema:
+            type: string
+          description: Server URL override
+      responses:
+        '200':
+          description: Bookmarklet code
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          bookmarklet:
+                            type: string
+                            description: Minified bookmarklet code
+                          bookmarklet_readable:
+                            type: string
+                            description: Readable bookmarklet code
+                          instructions:
+                            type: string
+                            description: Setup instructions
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: API token obtained from /auth/token
+
+  parameters:
+    MarkId:
+      name: mark_id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Mark ID
+
+    TagId:
+      name: tag_id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Tag ID
+
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Error message
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+          description: Field-specific validation errors
+
+    TokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "1:1704067200:abc123def456..."
+        expires_in:
+          type: integer
+          example: 86400
+          description: Token validity in seconds
+        user:
+          $ref: '#/components/schemas/UserInfo'
+
+    UserInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: johndoe
+        email:
+          type: string
+          format: email
+          example: john@example.com
+
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: python
+
+    TagWithCount:
+      allOf:
+        - $ref: '#/components/schemas/Tag'
+        - type: object
+          properties:
+            count:
+              type: integer
+              example: 15
+              description: Number of marks with this tag
+
+    Mark:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        type:
+          type: string
+          enum: [bookmark, feed, youtube]
+          example: bookmark
+        title:
+          type: string
+          example: Python Tutorial
+        description:
+          type: string
+          nullable: true
+          example: A comprehensive Python tutorial
+        url:
+          type: string
+          format: uri
+          example: https://example.com/python-tutorial
+        clicks:
+          type: integer
+          example: 42
+        last_clicked:
+          type: string
+          format: date-time
+          nullable: true
+        created:
+          type: string
+          format: date-time
+        updated:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        full_html:
+          type: string
+          nullable: true
+          description: Full HTML content (only included when requested)
+
+    MarkCreate:
+      type: object
+      required:
+        - type
+        - title
+        - url
+      properties:
+        type:
+          type: string
+          enum: [bookmark, feed, youtube]
+          example: bookmark
+        title:
+          type: string
+          example: Python Tutorial
+        url:
+          type: string
+          format: uri
+          example: https://example.com/python-tutorial
+        description:
+          type: string
+          example: A comprehensive Python tutorial
+        tags:
+          type: array
+          items:
+            type: string
+          example: [python, tutorial, programming]
+
+    MarkUpdate:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [bookmark, feed, youtube]
+        title:
+          type: string
+        url:
+          type: string
+          format: uri
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    QuickAddRequest:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          format: uri
+          example: https://example.com/article
+        title:
+          type: string
+          example: Article Title
+        description:
+          type: string
+          example: Article description
+        tags:
+          type: array
+          items:
+            type: string
+          example: [reading, later]
+
+    QuickAddResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123
+        url:
+          type: string
+          example: https://example.com/article
+        title:
+          type: string
+          example: Article Title
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [created, exists]
+          example: created
+        metadata_extraction:
+          type: string
+          enum: [pending, not_needed]
+          example: pending
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        per_page:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 150
+        pages:
+          type: integer
+          example: 8
+        has_next:
+          type: boolean
+          example: true
+        has_prev:
+          type: boolean
+          example: false
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: Request body required
+
+    Unauthorized:
+      description: Authentication required or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: Invalid or expired token
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: Mark not found
+
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: Validation failed
+            errors:
+              title: Title is required
