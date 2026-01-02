@@ -1,129 +1,148 @@
-import threading
-from flask.globals import _request_ctx_stack
-from flask import (
-    Blueprint,
-    render_template,
-    flash,
-    redirect,
-    url_for,
-    g,
-    request,
-    abort,
-    jsonify,
-    json,
-    current_app
-)
-from flask_login import login_user, logout_user, login_required
-from werkzeug.utils import secure_filename
-import os
-# from bs4 import BeautifulSoup as BSoup
-from readability.readability import Document
-from urllib.request import urlopen
+"""
+Background thread for importing bookmarks from URLs.
+"""
+from __future__ import annotations
+
 from datetime import datetime
-from urllib.parse import urlparse, urljoin
-import feedparser
-from typing import Iterable
-from newspaper import Article, ArticleBinaryDataException
-#from gensim.summarization import keywords
-from werkzeug.utils import secure_filename
-import tldextract
-import requests
-from ..core.setup import app, db
-from ..core.youtube import get_youtube_info, check_url_video
-from ..core.error import is_safe_url
 from threading import Thread
-from ..models import Mark
-from ..models.tag import Tag
+from typing import Any
+from urllib.parse import urlparse
+
+import requests
+import tldextract
+from flask import current_app
+from newspaper import Article, ArticleBinaryDataException
+from readability.readability import Document
+
+from flaskmarks.core.extensions import db
+from flaskmarks.core.youtube import get_youtube_info, check_url_video
+from flaskmarks.models import Mark
+from flaskmarks.models.tag import Tag
 
 
-class MarksImportThread():
+class MarksImportThread(Thread):
+    """
+    Thread class for importing a bookmark from a URL.
+    
+    Fetches content, extracts metadata, and saves to database.
+    """
 
-    def __init__(self, url, user_id):
-        Thread.__init__(self)
+    def __init__(self, url: str, user_id: int) -> None:
+        """
+        Initialize the import thread.
+        
+        Args:
+            url: The URL to import
+            user_id: The ID of the user to associate the mark with
+        """
+        super().__init__()
         self.url = url
         self.user_id = user_id
-        self.m = None
+        self.m: dict[str, Any] | None = None
 
-
-    # function executed in a new thread
-    def run(self):
+    def run(self) -> dict[str, Any] | None:
+        """
+        Execute the import process.
+        
+        Returns:
+            Dictionary with mark data or None if import failed
+        """
         if self.is_url_valid(self.url, self.user_id):
             self.get_url_data()
         return self.m
 
-
-    def uri_validator(self, url_to_test):
+    def uri_validator(self, url_to_test: str) -> bool:
         """
-        Validate URL
-        return true or false
+        Validate URL format.
+        
+        Args:
+            url_to_test: URL string to validate
+        
+        Returns:
+            True if valid URL, False otherwise
         """
         try:
             result = urlparse(url_to_test)
             return all([result.scheme, result.netloc])
-        except:
+        except Exception:
             return False
 
-
-    def is_url_valid(self, url, user_id):
+    def is_url_valid(self, url: str, user_id: int) -> bool:
+        """
+        Check if URL is valid and not already imported.
+        
+        Args:
+            url: The URL to check
+            user_id: The user ID to check against
+        
+        Returns:
+            True if URL is valid and not a duplicate
+        """
+        # Import app here to avoid circular imports
+        from flaskmarks import app
+        
         with app.app_context():
-            # test if it looks like url
+            # Test if it looks like a URL
             if not self.uri_validator(url):
                 print("not valid uri")
                 return False
-            else:
-                existing_mark = Mark.query.filter(Mark.url == url, Mark.owner_id == user_id).all()
             
-            if len(existing_mark) > 0:
-                app.logger.debug('Mark with this url "%s" already exists.' % (url))
+            existing_mark = Mark.query.filter(
+                Mark.url == url,
+                Mark.owner_id == user_id
+            ).all()
+            
+            if existing_mark:
+                current_app.logger.debug(
+                    f'Mark with this url "{url}" already exists.'
+                )
                 print("exists!")
                 return False
-            else:
-                return True
-                r = MarksImportThread(url, user_id)
-                r.run()
+            
+            return True
 
-    def get_url_data(self):
+    def get_url_data(self) -> None:
+        """Fetch and extract data from the URL."""
         url = self.url
-
-        # print(f"Total Active threads are {threading.activeCount()}")
-        # print(f"new_imported_mark_thread: {url}")
-        
         url_domain = tldextract.extract(url).domain
         readable_title = None
 
-        m = {}
-        m['type'] = 'bookmark'
-        m['tags'] = []
-
-        m['url'] = url
-        m['title'] = url
-        m['description'] = ''
-        m['full_html'] = ''
+        m: dict[str, Any] = {
+            'type': 'bookmark',
+            'tags': [],
+            'url': url,
+            'title': url,
+            'description': '',
+            'full_html': '',
+        }
         
+        # Handle YouTube URLs
         if url_domain in ['youtube', 'youtu'] and check_url_video(url):
             print(url_domain)
-            youtube_info_dict = get_youtube_info(url)
-            m['title'] = youtube_info_dict['title']
-            m['description'] = youtube_info_dict['description']
-            youtube_info_dict['subtitles'] = youtube_info_dict['subtitles']
-            m['full_html'] = youtube_info_dict['description'] +  youtube_info_dict['subtitles']
+            youtube_info = get_youtube_info(url)
+            m['title'] = youtube_info['title']
+            m['description'] = youtube_info['description']
+            m['full_html'] = (
+                youtube_info['description'] + youtube_info['subtitles']
+            )
             
             m['tags'].append(url_domain)
             m['tags'].append('video')
 
-            # some videos don't have channel
-            if youtube_info_dict['uploader']:
-                m['tags'].append(youtube_info_dict['uploader'])
+            # Some videos don't have channel
+            if youtube_info['uploader']:
+                m['tags'].append(youtube_info['uploader'])
 
-            for auto_tag in youtube_info_dict['tags']:
+            for auto_tag in youtube_info['tags']:
                 m['tags'].append(auto_tag)
 
             self.m = m
             return
         
+        # Check content type
         try:
             with requests.head(url, timeout=4) as r:
-                content_type= r.headers.get('content-type', 'none')
+                content_type = r.headers.get('content-type', 'none')
 
                 if 'text' not in content_type:
                     m['tags'].append('binary_file')
@@ -135,6 +154,7 @@ class MarksImportThread():
             print(e)
             return 
         
+        # Parse article content
         article = Article(url)
 
         try:
@@ -145,45 +165,45 @@ class MarksImportThread():
         try:
             article.parse()
             article.nlp()
-        except:
+        except Exception:
             print(f"Article {url} not working: article not able to be parsed")
         else:
             if article.is_parsed:
                 full_html = article.html
-                # soup_page = BSoup(full_html, features="lxml")
 
                 if full_html:
                     readable = Document(full_html)
                     readable_html = readable.summary()
                     readable_title = readable.title()
-                    m['full_html']  = readable_html
+                    m['full_html'] = readable_html
                     m['description'] = article.summary
                 else:
-                    m['full_html']  = article.summary
+                    m['full_html'] = article.summary
                     m['description'] = article.summary
             else:
-                m['full_html']  = url
+                m['full_html'] = url
 
-            if readable_title:
-                m['title'] = readable_title
-            else:
-                m['title']  = url
+            m['title'] = readable_title if readable_title else url
             
-            # Add tags and keywords here
+            # Add tags and keywords
             m['tags'].append(url_domain)
 
             for auto_tag in article.keywords[:5]:
                 m['tags'].append(auto_tag)
                     
-        print('New %s: "%s", added.' % (type,  m['title'] ))
+        print(f'New bookmark: "{m["title"]}", added.')
         
         self.m = m
         self.insert_mark_thread()
-        
-        return
 
-    def insert_mark_thread(self):
+    def insert_mark_thread(self) -> None:
+        """Insert the mark into the database."""
         data = self.m
+        if not data:
+            return
+
+        # Import app here to avoid circular imports
+        from flaskmarks import app
 
         with app.app_context():
             m = Mark(self.user_id)
@@ -195,9 +215,10 @@ class MarksImportThread():
 
             for auto_tag in data['tags']:
                 m.tags.append(Tag(auto_tag))
+            
             try:
                 db.session.add(m)
                 db.session.commit()
             except Exception as e:
                 print(e)
-
+                db.session.rollback()

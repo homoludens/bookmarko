@@ -1,7 +1,8 @@
-# -*- coding: utf-8 -*-
-# package
+"""
+View blueprints for the Flaskmarks application.
+"""
+from __future__ import annotations
 
-from . import profile
-from . import auth
-from . import tags
-from . import marks
+from flaskmarks.views import auth, marks, profile, tags
+
+__all__ = ["auth", "marks", "profile", "tags"]

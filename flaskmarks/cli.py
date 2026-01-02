@@ -1,0 +1,114 @@
+"""
+CLI commands for the Flaskmarks application.
+
+This module replaces the deprecated Flask-Script with Click CLI commands.
+"""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import click
+
+if TYPE_CHECKING:
+    from flask import Flask
+
+
+def register_cli(app: Flask) -> None:
+    """
+    Register CLI commands with the Flask application.
+    
+    Args:
+        app: The Flask application instance
+    """
+    
+    @app.cli.command("create-db")
+    def create_db():
+        """Create all database tables."""
+        from flaskmarks.core.extensions import db
+        db.create_all()
+        click.echo("Database tables created.")
+    
+    @app.cli.command("drop-db")
+    @click.option("--yes", is_flag=True, help="Confirm dropping all tables")
+    def drop_db(yes: bool):
+        """Drop all database tables."""
+        if not yes:
+            click.confirm("Are you sure you want to drop all tables?", abort=True)
+        from flaskmarks.core.extensions import db
+        db.drop_all()
+        click.echo("Database tables dropped.")
+    
+    @app.cli.command("create-user")
+    @click.option("--username", prompt=True, help="Username for the new user")
+    @click.option("--email", prompt=True, help="Email for the new user")
+    @click.option("--password", prompt=True, hide_input=True, 
+                  confirmation_prompt=True, help="Password for the new user")
+    def create_user(username: str, email: str, password: str):
+        """Create a new user."""
+        from flaskmarks.core.extensions import db, bcrypt
+        from flaskmarks.models import User
+        
+        # Check if user exists
+        existing = User.query.filter(
+            (User.username == username) | (User.email == email)
+        ).first()
+        
+        if existing:
+            click.echo(f"Error: User with username '{username}' or email '{email}' already exists.")
+            return
+        
+        user = User()
+        user.username = username
+        user.email = email
+        user.password = bcrypt.generate_password_hash(password)
+        
+        db.session.add(user)
+        db.session.commit()
+        click.echo(f"User '{username}' created successfully.")
+    
+    @app.cli.command("list-users")
+    def list_users():
+        """List all users."""
+        from flaskmarks.models import User
+        
+        users = User.query.all()
+        if not users:
+            click.echo("No users found.")
+            return
+        
+        click.echo(f"{'ID':<5} {'Username':<20} {'Email':<30} {'Last Login':<20}")
+        click.echo("-" * 75)
+        for user in users:
+            last_logged = user.last_logged.strftime('%Y-%m-%d %H:%M') if user.last_logged else 'Never'
+            click.echo(f"{user.id:<5} {user.username:<20} {user.email:<30} {last_logged:<20}")
+    
+    @app.cli.command("import-marks")
+    @click.argument("filepath", type=click.Path(exists=True))
+    @click.option("--user-id", type=int, required=True, help="User ID to import marks for")
+    def import_marks(filepath: str, user_id: int):
+        """Import bookmarks from a text file (one URL per line)."""
+        from flaskmarks.models import User
+        from flaskmarks.core.marks_import_thread import MarksImportThread
+        
+        user = User.query.get(user_id)
+        if not user:
+            click.echo(f"Error: User with ID {user_id} not found.")
+            return
+        
+        with open(filepath, 'r') as f:
+            urls = [line.strip() for line in f if line.strip()]
+        
+        click.echo(f"Importing {len(urls)} URLs for user '{user.username}'...")
+        
+        imported = 0
+        for url in urls:
+            try:
+                importer = MarksImportThread(url, user_id)
+                result = importer.run()
+                if result:
+                    imported += 1
+                    click.echo(f"  Imported: {result.get('title', url)[:50]}")
+            except Exception as e:
+                click.echo(f"  Failed: {url} - {e}")
+        
+        click.echo(f"Import complete. {imported}/{len(urls)} URLs imported.")

@@ -1,58 +1,60 @@
-# flaskmarks/core/setup.py
+"""
+Legacy setup module for backward compatibility.
 
-from flask_sqlalchemy import SQLAlchemy
-# from flask_script import Manager
-# from flask_migrate import Migrate, MigrateCommand
-from flask_login import LoginManager
-from flask_bcrypt import Bcrypt
-from flask_bootstrap import Bootstrap
-# from flask_debugtoolbar import DebugToolbarExtension
-from .. import app
-from flask_migrate import Migrate
+This module re-exports extension instances from the new extensions module.
+New code should import directly from flaskmarks.core.extensions.
+"""
+from __future__ import annotations
 
-app.config.from_object('config')
-config = app.config
+from flask import current_app
 
-"""
-Debug mode
-"""
-app.debug = config['DEBUG_MODE']
+from .extensions import db, migrate, login_manager as lm, bcrypt, bootstrap
 
-"""
-Toolbar
-"""
-# toolbar = DebugToolbarExtension(app)
+# Re-export for backward compatibility
+__all__ = ["db", "migrate", "lm", "bcrypt", "config", "app"]
 
-"""
-Login manager
-"""
-lm = LoginManager()
-lm.init_app(app)
 
-"""
-Database ORM
-"""
-db = SQLAlchemy(app)
+def _get_app():
+    """Get the current Flask application instance."""
+    try:
+        return current_app._get_current_object()
+    except RuntimeError:
+        # Outside of application context, import the default app
+        from flaskmarks import app
+        return app
 
-"""
-DB migration
-"""
-migrate = Migrate(app, db)
 
-"""
-Manager
-"""
-# manager = Manager(app)
-# manager.add_command('db', MigrateCommand)
+def _get_config():
+    """Get the current Flask application config."""
+    return _get_app().config
 
-"""
-Bcrypt
-"""
-bcrypt = Bcrypt(app)
 
-"""
-Bootstrap
-"""
-Bootstrap(app)
+# Lazy properties for backward compatibility
+class _ConfigProxy:
+    """Proxy object for accessing Flask config."""
+    
+    def __getitem__(self, key):
+        return _get_config()[key]
+    
+    def __contains__(self, key):
+        return key in _get_config()
+    
+    def get(self, key, default=None):
+        return _get_config().get(key, default)
 
-SESSION_TYPE = 'filesystem'
+
+config = _ConfigProxy()
+
+
+# Lazy app property for backward compatibility
+class _AppProxy:
+    """Proxy object for accessing Flask app."""
+    
+    def __getattr__(self, name):
+        return getattr(_get_app(), name)
+    
+    def __call__(self, *args, **kwargs):
+        return _get_app()(*args, **kwargs)
+
+
+app = _AppProxy()
