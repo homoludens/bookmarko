@@ -1,222 +1,226 @@
-"""
-Marks (bookmarks) views and routes.
-"""
-from __future__ import annotations
-
-import concurrent.futures
-import logging
-import os
-from collections.abc import Iterable
-from datetime import datetime
-from itertools import islice
-from threading import Thread
-from urllib.parse import urlparse
-
-import feedparser
+# flaskmarks/views/profile.py
+import threading
+# from flask.globals import _request_ctx_stack
 from flask import (
     Blueprint,
-    abort,
-    current_app,
-    flash,
-    g,
-    json,
-    jsonify,
-    redirect,
     render_template,
-    request,
+    flash,
+    redirect,
     url_for,
+    g,
+    request,
+    abort,
+    jsonify,
+    json,
+    current_app
 )
-from flask_login import login_required
-from sqlalchemy_fulltext import FullTextSearch
-import sqlalchemy_fulltext.modes as FullTextMode
+from flask_login import login_user, logout_user, login_required
+from werkzeug.utils import secure_filename
+import os
+# from bs4 import BeautifulSoup as BSoup
+from readability.readability import Document
+from urllib.request import urlopen
+from datetime import datetime
+from urllib.parse import urlparse, urljoin
+import feedparser
+from typing import Iterable
+from newspaper import Article, ArticleBinaryDataException
+#from gensim.summarization import keywords
 from werkzeug.utils import secure_filename
 
-from flaskmarks.core.extensions import db
-from flaskmarks.core.error import is_safe_url
-from flaskmarks.core.marks_import_thread import MarksImportThread
-from flaskmarks.forms import (
+from ..core.setup import app, db
+from ..core.error import is_safe_url
+from ..core.marks_import_thread import MarksImportThread
+
+from ..forms import (
+    LoginForm,
     MarkForm,
     MarkEditForm,
     YoutubeMarkForm,
-    MarksImportForm,
+    UserRegisterForm,
+    UserProfileForm,
+    MarksImportForm
 )
-from flaskmarks.models import Mark
+from ..models import Mark
+from ..models.tag import Tag
 
-# Suppress SQLAlchemy fulltext cache warning
+import logging
+from urllib.parse import urlparse
+
+from threading import Thread
+from itertools import islice
+from time import sleep
+import concurrent.futures
+# from flask_whooshee import Whooshee
+from sqlalchemy.sql import text
+from sqlalchemy import func
+
+from sqlalchemy_fulltext import FullText, FullTextSearch
+import sqlalchemy_fulltext.modes as FullTextMode
+# Suppress warning
+# https://github.com/mengzhuo/sqlalchemy-fulltext-search/issues/21
 FullTextSearch.inherit_cache = False
 
-# Module-level state for import progress tracking
-_import_status: int = 0
-_total_lines: int = 0
+status = 0
+total_lines = 0
 
-# Thread pool for background imports
-_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
-# Configure logging
-logging.basicConfig(
-    filename='record.log',
-    level=logging.DEBUG,
-    format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s'
-)
-
-marks = Blueprint('marks', __name__)
-
-
-def uri_validator(url_to_test: str) -> bool:
+def uri_validator(url_to_test):
     """
-    Validate URL format.
-
-    Args:
-        url_to_test: URL string to validate
-
-    Returns:
-        True if valid URL, False otherwise
+    Validate URL
+    return true or false
     """
     try:
         result = urlparse(url_to_test)
         return all([result.scheme, result.netloc])
-    except Exception:
+    except:
         return False
+
+logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
+
+marks = Blueprint('marks', __name__)
 
 
 @marks.route('/')
 @marks.route('/index')
 def webroot():
-    """Redirect to recently added marks."""
     return redirect(url_for('marks.recently_added'))
 
 
 @marks.route('/marks/all')
 @marks.route('/marks/all/<int:page>')
 @login_required
-def allmarks(page: int = 1):
-    """Display all marks for current user."""
+def allmarks(page=1):
     u = g.user
-    return render_template(
-        'mark/index.html',
-        title=f'Marks - page {page}',
-        header='',
-        marks=u.marks(page)
-    )
+    return render_template('mark/index.html',
+                           title='Marks - page %d' % page,
+                           header='',
+                           marks=u.marks(page))
 
 
 @marks.route('/marks/sort/clicked')
 @marks.route('/marks/sort/clicked/<int:page>')
 @login_required
-def recently_clicked(page: int = 1):
-    """Display marks sorted by recently clicked."""
+def recently_clicked(page=1):
     u = g.user
-    return render_template(
-        'mark/index.html',
-        title=f'Marks - page {page}',
-        header='',
-        marks=u.recent_marks(page, 'clicked')
-    )
+    return render_template('mark/index.html',
+                           title='Marks - page %d' % page,
+                           header='',
+                           marks=u.recent_marks(page, 'clicked'))
 
 
 @marks.route('/marks/sort/recently')
 @marks.route('/marks/sort/recently/<int:page>')
 @login_required
-def recently_added(page: int = 1):
-    """Display marks sorted by recently added."""
+def recently_added(page=1):
     u = g.user
-    return render_template(
-        'mark/index.html',
-        title=f'Marks - page {page}',
-        header='',
-        marks=u.recent_marks(page, 'added')
-    )
+    return render_template('mark/index.html',
+                           title='Marks - page %d' % page,
+                           header='',
+                           marks=u.recent_marks(page, 'added'))
 
 
 @marks.route('/marks/search/tag/<slug>')
 @marks.route('/marks/search/tag/<slug>/<int:page>')
 @login_required
-def mark_q_tag(slug: str, page: int = 1):
-    """Search marks by tag."""
-    return render_template(
-        'mark/index.html',
-        title=f'Marks with tag: {slug}',
-        header=f'Marks with tag: {slug}',
-        marks=g.user.q_marks_by_tag(slug, page)
-    )
+def mark_q_tag(slug, page=1):
+    return render_template('mark/index.html',
+                           title='Marks with tag: %s' % (slug),
+                           header='Marks with tag: %s' % (slug),
+                           marks=g.user.q_marks_by_tag(slug, page))
 
 
 @marks.route('/marks/search/string', methods=['GET'])
 @marks.route('/marks/search/string/<int:page>', methods=['GET'])
 @login_required
-def search_string(page: int = 1):
-    """Search marks by string using fulltext search."""
+def search_string(page=1):
     q = request.args.get('q')
     t = request.args.get('type')
 
     if not q and not t:
         return redirect(url_for('marks.allmarks'))
 
-    results = (
-        db.session.query(Mark)
-        .filter(FullTextSearch(q, Mark, FullTextMode.NATURAL))
-        .filter(Mark.owner_id == g.user.id)
-        .paginate(page=page, per_page=5, error_out=False)
-    )
+    # results = Mark.query.session.query(Mark)\
+    #                     .filter(FullTextSearch(q, Mark, FullTextMode.NATURAL))\
+    #                     .filter(Mark.owner_id == g.user.id)\
+    #                     .paginate(page=page, per_page=5, error_out=False)
 
-    return render_template(
-        'mark/index.html',
-        title=f'Search results for: {q}',
-        header=f"Search results for: '{q}'",
-        marks=results
-    )
+    # results = Mark.query.filter(
+    #     func.to_tsvector('english', Mark.full_html).match(q))\
+    #                     .filter(Mark.owner_id == g.user.id)\
+    #                     .paginate(page=page, per_page=5, error_out=False)
+
+    results = Mark.query.with_entities(Mark.id, Mark.title, Mark.url, Mark.description) \
+        .filter(func.to_tsvector('english', Mark.full_html).match(q)) \
+        .filter(Mark.owner_id == g.user.id) \
+        .paginate(page=page, per_page=5, error_out=False)
+
+
+    return render_template('mark/index.html',
+                           title='Search results for: %s' % (q),
+                           header="Search results for: '%s'" % (q),
+                           marks=results)
+
+
+
+def search(query):
+    return Mark.query.filter(
+        func.to_tsvector('english', Mark.full_html).match(query)
+    ).all()
 
 
 @marks.route('/mark/new', methods=['GET'])
 @login_required
 def new_mark_selector():
-    """Display new mark type selector."""
-    return render_template('mark/new_selector.html', title='Select new mark type')
+    return render_template('mark/new_selector.html',
+                           title='Select new mark type')
+
 
 
 @marks.route('/mark/new/<string:type>', methods=['GET', 'POST'])
 @login_required
-def new_mark(type: str):
-    """Create a new mark of specified type."""
+def new_mark(type):
     u = g.user
 
     if type not in ['bookmark', 'feed', 'youtube']:
         abort(404)
 
-    form = YoutubeMarkForm() if type == 'youtube' else MarkForm()
-
+    if type == 'youtube':
+        form = YoutubeMarkForm()
+    else:
+        form = MarkForm()
+    """
+    POST
+    """
     if form.validate_on_submit():
-        # Check if mark with this URL exists
+        """ Check if a mark with this urs exists."""
         if g.user.q_marks_by_url(form.url.data):
-            flash(
-                f'Mark with this url "{form.url.data}" already exists.',
-                category='danger'
-            )
+            flash('Mark with this url "%s" already\
+                  exists.' % (form.url.data), category='danger')
             return redirect(url_for('marks.allmarks'))
-
         m = Mark(u.id)
         form.populate_obj(m)
         m.type = type
 
-        # If no title, fetch content from URL
+        # if no title we will get title and text
         if not form.title.data:
             r = MarksImportThread(form.url.data, u.id)
             m = r.run()
 
-        flash(f'New {type}: "{m["title"]}", added.', category='success')
+        flash('New %s: "%s", added.' % (type, m['title']), category='success')
         return redirect(url_for('marks.allmarks'))
-
-    return render_template(
-        f'mark/new_{type}.html',
-        title=f'New {type}',
-        form=form
-    )
+    """
+    GET
+    """
+    return render_template('mark/new_%s.html' % (type),
+                           title='New %s' % (type),
+                           form=form)
 
 
 @marks.route('/mark/view/<int:id>/<string:type>', methods=['GET'])
 @login_required
-def view_mark(id: int, type: str):
-    """View a feed-type mark."""
+def view_mark(id, type):
     m = g.user.get_mark_by_id(id)
     if not m:
         abort(403)
@@ -231,84 +235,82 @@ def view_mark(id: int, type: str):
     db.session.add(m)
     db.session.commit()
 
-    return render_template(
-        f'mark/view_{type}.html',
-        mark=m,
-        data=data,
-        title=m.title,
-    )
+    return render_template('mark/view_%s.html' % (type),
+                           mark=m,
+                           data=data,
+                           title=m.title,
+                           )
 
 
 @marks.route('/mark/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
-def edit_mark(id: int):
-    """Edit an existing mark."""
+def edit_mark(id):
     m = g.user.get_mark_by_id(id)
     form = MarkEditForm(obj=m)
-
     if not m:
         abort(403)
-
+    """
+    POST
+    """
     if form.validate_on_submit():
         if m.url != form.url.data and g.user.q_marks_by_url(form.url.data):
-            flash(
-                f'Mark with this url ({form.url.data}) already exists.',
-                category='danger'
-            )
+            flash('Mark with this url (%s) already\
+                  exists.' % (form.url.data), category='danger')
             return redirect(url_for('marks.allmarks'))
-
         form.populate_obj(m)
         m.updated = datetime.utcnow()
         db.session.add(m)
         db.session.commit()
-        flash(f'Mark "{form.title.data}" updated.', category='success')
-
+        flash('Mark "%s" updated.' % (form.title.data), category='success')
         if form.referrer.data and is_safe_url(form.referrer.data):
             return redirect(form.referrer.data)
         return redirect(url_for('marks.allmarks'))
-
+    """
+    GET
+    """
     form.referrer.data = request.referrer
-    return render_template(
-        'mark/edit.html',
-        mark=m,
-        title=f'Edit mark - {m.title}',
-        form=form
-    )
+    return render_template('mark/edit.html',
+                           mark=m,
+                           title='Edit mark - %s' % m.title,
+                           form=form
+                           )
 
 
 @marks.route('/mark/viewhtml/<int:id>', methods=['GET', 'POST'])
 @login_required
-def view_html_mark(id: int):
-    """View the HTML content of a mark."""
+def view_html_mark(id):
     m = g.user.get_mark_by_id(id)
     if not m:
         abort(403)
-    return render_template(
-        'mark/view_html.html',
-        mark=m,
-        title=f'View html for mark - {m.title}',
-    )
+    return render_template('mark/view_html.html',
+                           mark=m,
+                           title='View html for mark - %s' % m.title,
+                           )
+
 
 
 @marks.route('/mark/delete/<int:id>')
 @login_required
-def delete_mark(id: int):
-    """Delete a mark."""
+def delete_mark(id):
     m = g.user.get_mark_by_id(id)
     if m:
         db.session.delete(m)
         db.session.commit()
-        flash(f'Mark "{m.title}" deleted.', category='info')
+        flash('Mark "%s" deleted.' % (m.title), category='info')
+        """
+        if request.referrer and is_safe_url(request.referrer):
+            return redirect(request.referrer)
+        """
         return redirect(url_for('marks.allmarks'))
     abort(403)
 
 
-# AJAX endpoints
-
+########
+# AJAX #
+########
 @marks.route('/mark/inc')
 @login_required
 def ajax_mark_inc():
-    """Increment click count for a mark (AJAX)."""
     if request.args.get('id'):
         id = int(request.args.get('id'))
         m = g.user.get_mark_by_id(id)
@@ -322,98 +324,120 @@ def ajax_mark_inc():
     return jsonify(status='error')
 
 
-# Import / Export
-
+###################
+# Import / Export #
+###################
 @marks.route('/marks/export.json', methods=['GET'])
 @login_required
 def export_marks():
-    """Export all marks as JSON."""
     u = g.user
-    d = [
-        {
-            'title': m.title,
-            'type': m.type,
-            'url': m.url,
-            'clicks': m.clicks,
-            'last_clicked': m.last_clicked,
-            'created': m.created.strftime('%s'),
-            'updated': m.updated.strftime('%s') if m.updated else '',
-            'tags': [t.title for t in m.tags]
-        }
-        for m in u.all_marks()
-    ]
+    d = [{'title': m.title,
+          'type': m.type,
+          'url': m.url,
+          'clicks': m.clicks,
+          'last_clicked': m.last_clicked,
+          'created': m.created.strftime('%s'),
+          'updated': m.updated.strftime('%s') if m.updated else '',
+          'tags': [t.title for t in m.tags]}
+         for m in u.all_marks()]
     return jsonify(marks=d)
 
 
-def flatten(items: Iterable) -> Iterable:
-    """Yield items from any nested iterable."""
+#######################
+# Import Firefox JSON #
+#######################
+def iterdict(d):
+  app.logger.info('Info level log')
+  i = 0
+  if 'children' in d:
+    iterdict(d['children'])
+  else:
+      for bookmark in d:
+        if 'children' in bookmark:
+            iterdict(bookmark['children'])
+        if 'uri' in bookmark:
+            i = i + 1
+            try:
+                app.logger.debug(bookmark['uri'])
+                # new_imported_mark(bookmark['uri'])
+            except Exception as e:
+                app.logger.error(e)
+                # app.logger.error('Exception %s, not added. %s' % (bookmark['uri'], e))
+                # print('Exception %s, not added. %s' % (bookmark['uri'], e))
+
+
+def iterdict2(d):
+    """
+    data = json.load(open('file.json'))
+    a = iterdict2(data)
+    """
+    i = 0
+    final_list = []
+    if 'children' in d:
+        l = iterdict2(d['children'])
+        final_list.append(l)
+    else:
+        for bookmark in d:
+            if 'children' in bookmark:
+                l = iterdict2(bookmark['children'])
+                final_list.append(l)
+            if 'uri' in bookmark:
+                i = i + 1
+                print(i)
+                try:
+                    uri = bookmark['uri']
+                    final_list.append(uri)
+                    # print(bookmark['uri'])
+
+                    # print(bookmark.keys())
+                except Exception as e:
+                    print(f"Exception: {e}")
+                    uri = ''
+    return list(flatten(final_list))
+
+
+def flatten(items):
+    """Yield items from any nested iterable; see Reference."""
     for x in items:
         if isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
-            yield from flatten(x)
+            for sub_x in flatten(x):
+                yield sub_x
         else:
             yield x
 
 
-def iterdict2(d: dict | list) -> list[str]:
-    """
-    Extract all URIs from nested Firefox bookmark JSON structure.
-
-    Args:
-        d: Dictionary or list from Firefox bookmarks JSON
-
-    Returns:
-        List of bookmark URIs
-    """
-    final_list: list = []
-
-    if isinstance(d, dict) and 'children' in d:
-        final_list.append(iterdict2(d['children']))
-    elif isinstance(d, list):
-        for bookmark in d:
-            if isinstance(bookmark, dict):
-                if 'children' in bookmark:
-                    final_list.append(iterdict2(bookmark['children']))
-                if 'uri' in bookmark:
-                    final_list.append(bookmark['uri'])
-
-    return list(flatten(final_list))
+###################
+# Import mark from uri #
+###################
 
 
-def _thread_import_file(text_file_path: str, app, user_id: int) -> None:
-    """
-    Import bookmarks from a text file in a background thread.
-
-    Args:
-        text_file_path: Path to the text file with URLs
-        app: Flask application instance
-        user_id: ID of the user to import marks for
-    """
-    global _import_status
+def thread_import_file(text_file_path, app, user_id):
     maxthreads = 20
-    _import_status = 0
+    global status
+    global total_lines
+    status = 0
+    i = 0
 
     with open(text_file_path) as fp:
         while True:
-            lines_gen = list(islice(fp, maxthreads))
-            if not lines_gen:
-                break
-
+            lines_gen = islice(fp, maxthreads)
+            # print(list(lines_gen))
             lines_new = []
             for line in lines_gen:
-                _import_status += 1
+                status += 1
+                # line = fp.readline()
+                if not lines_gen:
+                    break
+                print("Line{}: {}".format(status, line.strip()))
                 url = line.strip()
-                if url:
-                    lines_new.append(url)
+                lines_new.append(url)
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=maxthreads) as exe:
-                exe.map(
-                    _marks_import_thread_wrapper,
-                    [(url, user_id) for url in lines_new]
-                )
+                zip( lines_new, [user_id] * len(lines_new) )
+                result = exe.map(marks_import_threads, zip( lines_new, [user_id] * len(lines_new)))
 
 
-def _marks_import_thread_wrapper(url_user_id: tuple[str, int]) -> None:
-    """Wrapper for importing a single mark in a thread."""
+def marks_import_threads(url_user_id):
     url, user_id = url_user_id
     r = MarksImportThread(url, user_id)
     r.run()
@@ -422,68 +446,69 @@ def _marks_import_thread_wrapper(url_user_id: tuple[str, int]) -> None:
 @marks.route('/marks/import', methods=['GET', 'POST'])
 @login_required
 def import_marks():
-    """Import marks from an uploaded file."""
-    global _import_status, _total_lines
+    global status
+    global total_lines
 
-    current_app.logger.error('Processing default request')
+    app.logger.error('Processing default request')
     u = g.user
     form = MarksImportForm(obj=u)
 
     if form.validate_on_submit():
         f = form.file.data
         filename = secure_filename(f.filename)
-        filepath = os.path.join(current_app.root_path, 'files', filename)
-
-        # Ensure files directory exists
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        f.save(filepath)
+        f.save(os.path.join(
+            app.root_path, 'files', filename
+        ))
 
         if f.content_type == 'text/plain':
-            with open(filepath) as fp:
-                _total_lines = sum(1 for _ in fp)
-
-            t1 = Thread(
-                target=_thread_import_file,
-                args=(filepath, current_app._get_current_object(), u.id)
+            count = 0
+            text_file_path = os.path.join(
+                app.root_path, 'files', filename
             )
+
+            with open(text_file_path) as fp:
+                for total_lines, line in enumerate(fp):
+                    pass
+
+            print('Total Lines', total_lines + 1)
+
+            t1 = Thread(target=thread_import_file, args=(text_file_path, current_app._get_current_object(), u.id))
             t1.start()
 
-            flash(f'Import started for {_total_lines} URLs', category='success')
-            return render_template(
-                'profile/import_progress.html',
-                total_lines=_total_lines,
-                status=1
-            )
+        flash('%s marks imported' % (count), category='success')
+        return render_template('profile/import_progress.html', total_lines=total_lines, status=1 )
 
-    _import_status = 0
+    status = 0
+
     return render_template('profile/import_progress.html', form=form, status=0)
 
-
+# TODO: make this multiuser friendly
 @marks.route('/marks/import/status', methods=['GET', 'POST'])
 @login_required
-def get_import_status():
-    """Get current import status (AJAX endpoint)."""
-    return json.dumps({'status': _import_status, 'total_lines': _total_lines})
+def getStatus():
+  global status
+  global total_lines
+  statusList = {'status':status, 'total_lines': total_lines}
+  return json.dumps(statusList)
 
-
-# Other routes
-
+#########
+# Other #
+#########
 @marks.route('/mark/redirect/<int:id>')
 @login_required
-def mark_redirect(id: int):
-    """Redirect through meta refresh for a mark."""
+def mark_redirect(id):
     url = url_for('marks.mark_meta', id=id)
     return render_template('meta.html', url=url)
 
 
 @marks.route('/meta/<int:id>')
 @login_required
-def mark_meta(id: int):
-    """Handle meta redirect and increment click count."""
+def mark_meta(id):
     m = g.user.get_mark_by_id(id)
     if m:
         m.clicks = m.clicks + 1
         m.last_clicked = datetime.utcnow()
         db.session.add(m)
+        #db.session.commit()
         return render_template('meta.html', url=m.url)
     abort(403)

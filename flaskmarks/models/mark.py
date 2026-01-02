@@ -7,10 +7,12 @@ from datetime import datetime as dt
 from typing import Any
 
 from sqlalchemy import event, Column, Text
-from sqlalchemy.dialects.mysql import LONGTEXT
+from sqlalchemy.sql import func
+# from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import TSVECTOR
+# from sqlalchemy_fulltext import FullText
 
-from sqlalchemy_fulltext import FullText
 
 from ..core.setup import db
 from .tag import Tag
@@ -24,14 +26,14 @@ ass_tbl = db.Table(
 )
 
 
-class Mark(FullText, db.Model):
+class Mark(db.Model):
     """
     Model representing a bookmark, feed, or YouTube link.
 
     Supports fulltext search on title, description, full_html, and url.
     """
     __tablename__ = 'marks'
-    __fulltext_columns__ = ('title', 'description', 'full_html', 'url')
+    # __fulltext_columns__ = ('title', 'description', 'full_html', 'url')
 
     id = db.Column(db.Integer, primary_key=True)
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -44,12 +46,18 @@ class Mark(FullText, db.Model):
     last_clicked = db.Column(db.DateTime)
     created = db.Column(db.DateTime)
     updated = db.Column(db.DateTime)
+    search_vector = db.Column(TSVECTOR)
 
     tags = relationship(
         'Tag',
         secondary=ass_tbl,
         lazy='joined',
         backref='marks'
+    )
+
+    # Create a GiST or GIN index for better performance
+    __table_args__ = (
+        db.Index('idx_search_vector', 'search_vector', postgresql_using='gin'),
     )
 
     valid_types = ['bookmark', 'feed', 'youtube']
@@ -111,6 +119,12 @@ def receive_before_insert(
 ) -> None:
     """Event listener for before insert - placeholder for future use."""
     pass
+
+@event.listens_for(Mark, 'before_insert')
+@event.listens_for(Mark, 'before_update')
+def update_search_vector(mapper, connection, target):
+    target.search_vector = func.to_tsvector('english',
+        func.coalesce(target.title, '') + ' ' + func.coalesce(target.full_html, ''))
 
 
 @event.listens_for(Mark.__table__, 'after_create')

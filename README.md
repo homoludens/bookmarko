@@ -121,3 +121,17 @@ GRANT USAGE, CREATE ON SCHEMA public TO bookm_user;
 ALTER DATABASE bookmarko OWNER TO bookm_user;
 
 DATABASE_URL="postgresql://bookm_user:digestpass@localhost:5432/bookmarko"
+
+
+## Add full text search for postgresdb 
+
+-- Run this SQL migration
+ALTER TABLE marks 
+ADD COLUMN search_vector tsvector 
+GENERATED ALWAYS AS (
+    setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
+    setweight(to_tsvector('english', coalesce(full_html, '')), 'B')
+) STORED;
+
+-- Create index
+CREATE INDEX idx_marks_search ON marks USING gin(search_vector);
