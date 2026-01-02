@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import datetime as dt
 from typing import Any
 
-from sqlalchemy import event, Column, Text
+from sqlalchemy import event, Column, Text, Computed
 from sqlalchemy.sql import func
 # from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import relationship
@@ -47,7 +47,15 @@ class Mark(db.Model):
     last_clicked = db.Column(db.DateTime)
     created = db.Column(db.DateTime)
     updated = db.Column(db.DateTime)
-    search_vector = db.Column(TSVECTOR)
+    # PostgreSQL generated column - computed automatically from title and full_html
+    search_vector = db.Column(
+        TSVECTOR,
+        Computed(
+            "setweight(to_tsvector('english', COALESCE(title, '')), 'A') || "
+            "setweight(to_tsvector('english', COALESCE(full_html, '')), 'B')",
+            persisted=True
+        )
+    )
 
     # RAG embedding columns
     embedding = db.Column(Vector(384), nullable=True)
@@ -165,11 +173,9 @@ def receive_before_insert(
     """Event listener for before insert - placeholder for future use."""
     pass
 
-@event.listens_for(Mark, 'before_insert')
-@event.listens_for(Mark, 'before_update')
-def update_search_vector(mapper, connection, target):
-    target.search_vector = func.to_tsvector('english',
-        func.coalesce(target.title, '') + ' ' + func.coalesce(target.full_html, ''))
+
+# Note: search_vector is a PostgreSQL generated column, updated automatically by the database.
+# See migration: migrations/versions/be4a02ad2b40_adding_create_after_triger_for_full_.py
 
 
 @event.listens_for(Mark.__table__, 'after_create')
