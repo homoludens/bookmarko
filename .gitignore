@@ -60,3 +60,12 @@ venv
 
 #whoosh database
 flaskmarks_search.db
+
+.flaskenv
+.idea/
+.python-version
+.vscode/
+examples/
+CLAUDE*.txt
+*.log
+*.mp4

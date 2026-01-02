@@ -1,6 +1,6 @@
 #requirements
 
-flask==2.3.3 
+flask==2.3.3
 flask-login
 flask-sqlalchemy
 flask-debugtoolbar
@@ -15,7 +15,7 @@ wtforms
 pep8
 feedparser
 flask-msearch
-whoosh 
+whoosh
 blinker
 
 readability-lxml
@@ -27,6 +27,6 @@ yt_dlp
 newspaper4k
 gensim
 celery
-
-
-
+gunicorn
+mysqlclient
+SQLAlchemy-FullText-Search

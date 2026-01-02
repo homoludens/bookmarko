@@ -429,7 +429,6 @@ def marks_import_threads(url_user_id):
 def import_marks():
     global status
     global total_lines
-    # total_lines = 0
 
     app.logger.error('Processing default request')
     u = g.user
@@ -464,7 +463,7 @@ def import_marks():
     
     return render_template('profile/import_progress.html', form=form, status=0)
   
-
+# TODO: make this multiuser friendly
 @app.route('/marks/import/status', methods=['GET', 'POST'])
 @login_required
 def getStatus():
@@ -472,8 +471,6 @@ def getStatus():
   global total_lines
   statusList = {'status':status, 'total_lines': total_lines}
   return json.dumps(statusList)
-
-# Threaded import - end
 
 #########
 # Other #

@@ -47,7 +47,7 @@ class User(db.Model):
 
     def recent_marks(self, page, type):
         if type == 'added':
-            base = self.my_marks().order_by(desc(Mark.created))
+            base = self.my_marks().order_by(desc(Mark.id))
             return base.paginate(page=page, per_page=self.per_page, error_out=False)
         if type == 'clicked':
             base = self.my_marks().filter(Mark.clicks > 0)\

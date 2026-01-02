@@ -31,7 +31,7 @@ Install
 * run: `flask --app flaskmarks db migrate -m "MIGRATION DESCRIPTION"`
 * run: `flask --app flaskmarks db upgrade`
 * run: `flask --app flaskmarks db`
-
+* or gunicorn `gunicorn -w 4 'flaskmarks:app'`
 
 >>> python3
 >>> import nltk
