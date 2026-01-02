@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block content %}
+<div class="container" role="main">
+    {% include "flash.html" %}
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Chat with Your Bookmarks</h4>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="clearHistory">
+                        Clear History
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- Chat messages container -->
+                    <div id="chatMessages" class="chat-messages mb-3">
+                        {% if not chat_history %}
+                        <div class="text-center text-muted py-5" id="emptyState">
+                            <p class="mt-3">Ask me anything about your bookmarks!</p>
+                            <p class="small">I'll search through your saved content to find relevant information.</p>
+                        </div>
+                        {% else %}
+                        {% for msg in chat_history %}
+                        <div class="message {% if msg.role == 'user' %}message-user{% else %}message-assistant{% endif %} mb-3">
+                            <div class="message-content p-3 rounded">
+                                {% if msg.role == 'user' %}
+                                <strong>You:</strong>
+                                {% else %}
+                                <strong>Assistant:</strong>
+                                {% endif %}
+                                <p class="mb-0 mt-2">{{ msg.content }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <!-- Input form -->
+                    <form id="chatForm" method="POST">
+                        {{ form.hidden_tag() }}
+                        <div class="input-group">
+                            {{ form.query(class="form-control", id="queryInput") }}
+                            <button type="submit" class="btn btn-primary" id="sendBtn">
+                                Send
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            Press Enter to send, Shift+Enter for new line
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Sources panel (shown after response) -->
+            <div id="sourcesPanel" class="card mt-3" style="display: none;">
+                <div class="card-header">
+                    <h5 class="mb-0">Sources Used</h5>
+                </div>
+                <div class="card-body">
+                    <ul id="sourcesList" class="list-group list-group-flush">
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-messages {
+    height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.message-user .message-content {
+    background-color: #0d6efd;
+    color: white;
+    margin-left: 20%;
+}
+
+.message-assistant .message-content {
+    background-color: white;
+    border: 1px solid #dee2e6;
+    margin-right: 20%;
+}
+
+.message-content p {
+    white-space: pre-wrap;
+}
+
+#queryInput {
+    resize: none;
+}
+
+.source-item {
+    padding: 0.5rem 0;
+}
+
+.source-score {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chatForm');
+    const chatMessages = document.getElementById('chatMessages');
+    const queryInput = document.getElementById('queryInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const sourcesPanel = document.getElementById('sourcesPanel');
+    const sourcesList = document.getElementById('sourcesList');
+    const clearHistoryBtn = document.getElementById('clearHistory');
+    const emptyState = document.getElementById('emptyState');
+
+    // Scroll to bottom of chat
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Add message to chat
+    function addMessage(role, content) {
+        if (emptyState) {
+            emptyState.remove();
+        }
+
+        const label = role === 'user' ? 'You' : 'Assistant';
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message message-${role} mb-3`;
+        messageDiv.innerHTML = `
+            <div class="message-content p-3 rounded">
+                <strong>${label}:</strong>
+                <p class="mb-0 mt-2">${escapeHtml(content).replace(/\n/g, '<br>')}</p>
+            </div>
+        `;
+        chatMessages.appendChild(messageDiv);
+        scrollToBottom();
+    }
+
+    // Show loading state
+    function setLoading(loading) {
+        if (loading) {
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            queryInput.disabled = true;
+        } else {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = 'Send';
+            queryInput.disabled = false;
+            queryInput.focus();
+        }
+    }
+
+    // Display sources
+    function showSources(sources) {
+        if (sources && sources.length > 0) {
+            sourcesList.innerHTML = sources.map(s => `
+                <li class="list-group-item source-item">
+                    <a href="${escapeHtml(s.url)}" target="_blank">${escapeHtml(s.title)}</a>
+                    <span class="source-score">(relevance: ${(s.score * 100).toFixed(1)}%)</span>
+                </li>
+            `).join('');
+            sourcesPanel.style.display = 'block';
+        } else {
+            sourcesPanel.style.display = 'none';
+        }
+    }
+
+    // Handle form submission
+    chatForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const query = queryInput.value.trim();
+        if (!query) return;
+
+        // Add user message
+        addMessage('user', query);
+        queryInput.value = '';
+
+        setLoading(true);
+
+        try {
+            const response = await fetch('{{ url_for("chat.send_message") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'csrf_token': '{{ form.csrf_token._value() }}',
+                    'query': query
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                addMessage('assistant', 'Error: ' + data.error);
+            } else {
+                addMessage('assistant', data.answer);
+                showSources(data.sources);
+            }
+        } catch (error) {
+            addMessage('assistant', 'Sorry, an error occurred. Please try again.');
+            console.error('Chat error:', error);
+        }
+
+        setLoading(false);
+    });
+
+    // Handle Enter key (send) and Shift+Enter (new line)
+    queryInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            chatForm.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    // Clear history
+    clearHistoryBtn.addEventListener('click', async function() {
+        if (!confirm('Clear all chat history?')) return;
+
+        try {
+            await fetch('{{ url_for("chat.clear_history") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'csrf_token': '{{ form.csrf_token._value() }}'
+                })
+            });
+            location.reload();
+        } catch (error) {
+            console.error('Clear error:', error);
+        }
+    });
+
+    // Scroll to bottom on load
+    scrollToBottom();
+});
+</script>
+{% endblock %}

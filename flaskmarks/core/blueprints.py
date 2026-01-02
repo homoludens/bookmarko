@@ -20,8 +20,10 @@ def register_blueprints(app: Flask) -> None:
     from flaskmarks.views.auth import auth
     from flaskmarks.views.tags import tags
     from flaskmarks.views.marks import marks
+    from flaskmarks.views.chat import chat
 
     app.register_blueprint(profile)
     app.register_blueprint(auth)
     app.register_blueprint(tags)
     app.register_blueprint(marks)
+    app.register_blueprint(chat)

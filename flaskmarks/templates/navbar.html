@@ -29,6 +29,11 @@
                             <li><a class="dropdown-item" href="{{ url_for('tags.by_clicks') }}">By clicks</a></li>
                         </ul>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('chat.chat_page') }}">
+                            <i class="bi bi-chat-dots"></i> Chat
+                        </a>
+                    </li>
                 {% else %}
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Login</a></li>
                     {% if config['CAN_REGISTER'] %}

@@ -11,6 +11,7 @@ from sqlalchemy.sql import func
 # from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import TSVECTOR
+from pgvector.sqlalchemy import Vector
 # from sqlalchemy_fulltext import FullText
 
 
@@ -47,6 +48,10 @@ class Mark(db.Model):
     created = db.Column(db.DateTime)
     updated = db.Column(db.DateTime)
     search_vector = db.Column(TSVECTOR)
+
+    # RAG embedding columns
+    embedding = db.Column(Vector(384), nullable=True)
+    embedding_updated = db.Column(db.DateTime, nullable=True)
 
     tags = relationship(
         'Tag',
@@ -109,6 +114,46 @@ class Mark(db.Model):
 
     def __repr__(self) -> str:
         return f'<Mark {self.title!r}>'
+
+    def get_embedding_text(self) -> str:
+        """
+        Generate the text to be embedded for this mark.
+        Combines title, description, tags, and cleaned HTML content.
+
+        Returns:
+            Combined text for embedding generation
+        """
+        from flaskmarks.core.rag.utils import strip_html_tags
+
+        tags_str = ', '.join(
+            tag.title for tag in self.tags
+        ) if self.tags else ''
+        content = strip_html_tags(self.full_html) if self.full_html else ''
+
+        # Truncate content to reasonable length (first ~2000 chars)
+        if len(content) > 2000:
+            content = content[:2000] + '...'
+
+        return f"""Title: {self.title}
+Description: {self.description or 'No description'}
+Tags: {tags_str or 'No tags'}
+Content: {content}
+URL: {self.url}"""
+
+    def needs_embedding_update(self) -> bool:
+        """
+        Check if embedding needs to be regenerated.
+
+        Returns:
+            True if embedding should be updated
+        """
+        if self.embedding is None:
+            return True
+        if self.embedding_updated is None:
+            return True
+        if self.updated and self.updated > self.embedding_updated:
+            return True
+        return False
 
 
 @event.listens_for(Mark, 'before_insert')
