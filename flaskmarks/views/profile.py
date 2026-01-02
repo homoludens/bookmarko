@@ -6,6 +6,7 @@ from __future__ import annotations
 from flask import (
     Blueprint,
     abort,
+    current_app,
     flash,
     g,
     redirect,
@@ -27,7 +28,7 @@ def userprofile():
     """Display and update user profile."""
     u = g.user
     form = UserProfileForm(obj=u)
-    
+
     if form.validate_on_submit():
         form.populate_obj(u)
         if form.password.data:
@@ -38,7 +39,7 @@ def userprofile():
         db.session.commit()
         flash(f'User "{form.username.data}" updated.', category='success')
         return redirect(url_for('profile.userprofile'))
-    
+
     return render_template(
         'profile/view.html',
         form=form,
@@ -53,13 +54,11 @@ def userprofile():
 @profile.route('/register', methods=['GET', 'POST'])
 def register():
     """Handle new user registration."""
-    from flask import current_app
-    
     if not current_app.config.get('CAN_REGISTER', False):
         abort(403)
-    
+
     form = UserRegisterForm()
-    
+
     if form.validate_on_submit():
         u = User()
         form.populate_obj(u)
@@ -78,5 +77,5 @@ def register():
                 f'Problem registering "{form.username.data}".',
                 category='danger'
             )
-    
+
     return render_template('profile/register.html', form=form, title='Register')

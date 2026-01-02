@@ -13,7 +13,7 @@ from flask import (
     request,
     url_for,
 )
-from urllib.parse import urlparse, urljoin
+from werkzeug.exceptions import HTTPException
 
 from flaskmarks.core.error import is_safe_url
 
@@ -21,17 +21,17 @@ error = Blueprint('error', __name__)
 
 
 @error.errorhandler(401)
-def unauthorized(error):
+def unauthorized(e: HTTPException) -> str:
     """Handle unauthorized access within this blueprint."""
-    if (request.referrer 
-        and is_safe_url(request.referrer) 
-        and request.referrer != "/"):
+    if (request.referrer
+            and is_safe_url(request.referrer)
+            and request.referrer != "/"):
         flash('Unauthorized access.', category='danger')
     return redirect(url_for('auth.login'))
 
 
 @error.errorhandler(403)
-def forbidden(error):
+def forbidden(e: HTTPException) -> str:
     """Handle forbidden access within this blueprint."""
     flash('Forbidden access.', category='danger')
     return redirect(url_for('marks.allmarks'))

@@ -27,25 +27,25 @@ bootstrap = Bootstrap()
 def init_extensions(app: Flask) -> None:
     """
     Initialize all Flask extensions with the application.
-    
+
     Args:
         app: The Flask application instance
     """
     # Database
     db.init_app(app)
     migrate.init_app(app, db)
-    
+
     # Authentication
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
     login_manager.login_message_category = "info"
-    
+
     # Security
     bcrypt.init_app(app)
-    
+
     # UI
     bootstrap.init_app(app)
-    
+
     # Debug toolbar (only in debug mode)
     if app.debug:
         try:

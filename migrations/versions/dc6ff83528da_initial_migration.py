@@ -1,16 +1,16 @@
-"""Initial migration. mysql 3.
+"""Initial migration
 
-Revision ID: 756f0f49087c
+Revision ID: dc6ff83528da
 Revises: 
-Create Date: 2024-02-13 00:03:30.558687
+Create Date: 2026-01-02 14:05:51.091866
 
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import mysql
+
 
 # revision identifiers, used by Alembic.
-revision = '756f0f49087c'
+revision = 'dc6ff83528da'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -40,8 +40,8 @@ def upgrade():
     sa.Column('owner_id', sa.Integer(), nullable=True),
     sa.Column('type', sa.Unicode(length=255), nullable=False),
     sa.Column('title', sa.Unicode(length=255), nullable=False),
-    sa.Column('description', sa.Unicode(length=4096), nullable=True),
-    sa.Column('full_html', mysql.LONGTEXT(), nullable=True),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('full_html', sa.Text(), nullable=True),
     sa.Column('url', sa.Unicode(length=512), nullable=False),
     sa.Column('clicks', sa.Integer(), nullable=True),
     sa.Column('last_clicked', sa.DateTime(), nullable=True),

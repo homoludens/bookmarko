@@ -3,7 +3,6 @@ Background thread for importing bookmarks from URLs.
 """
 from __future__ import annotations
 
-from datetime import datetime
 from threading import Thread
 from typing import Any
 from urllib.parse import urlparse
@@ -23,14 +22,14 @@ from flaskmarks.models.tag import Tag
 class MarksImportThread(Thread):
     """
     Thread class for importing a bookmark from a URL.
-    
+
     Fetches content, extracts metadata, and saves to database.
     """
 
     def __init__(self, url: str, user_id: int) -> None:
         """
         Initialize the import thread.
-        
+
         Args:
             url: The URL to import
             user_id: The ID of the user to associate the mark with
@@ -43,7 +42,7 @@ class MarksImportThread(Thread):
     def run(self) -> dict[str, Any] | None:
         """
         Execute the import process.
-        
+
         Returns:
             Dictionary with mark data or None if import failed
         """
@@ -54,10 +53,10 @@ class MarksImportThread(Thread):
     def uri_validator(self, url_to_test: str) -> bool:
         """
         Validate URL format.
-        
+
         Args:
             url_to_test: URL string to validate
-        
+
         Returns:
             True if valid URL, False otherwise
         """
@@ -70,35 +69,35 @@ class MarksImportThread(Thread):
     def is_url_valid(self, url: str, user_id: int) -> bool:
         """
         Check if URL is valid and not already imported.
-        
+
         Args:
             url: The URL to check
             user_id: The user ID to check against
-        
+
         Returns:
             True if URL is valid and not a duplicate
         """
         # Import app here to avoid circular imports
         from flaskmarks import app
-        
+
         with app.app_context():
             # Test if it looks like a URL
             if not self.uri_validator(url):
                 print("not valid uri")
                 return False
-            
+
             existing_mark = Mark.query.filter(
                 Mark.url == url,
                 Mark.owner_id == user_id
             ).all()
-            
+
             if existing_mark:
                 current_app.logger.debug(
                     f'Mark with this url "{url}" already exists.'
                 )
                 print("exists!")
                 return False
-            
+
             return True
 
     def get_url_data(self) -> None:
@@ -115,7 +114,7 @@ class MarksImportThread(Thread):
             'description': '',
             'full_html': '',
         }
-        
+
         # Handle YouTube URLs
         if url_domain in ['youtube', 'youtu'] and check_url_video(url):
             print(url_domain)
@@ -125,7 +124,7 @@ class MarksImportThread(Thread):
             m['full_html'] = (
                 youtube_info['description'] + youtube_info['subtitles']
             )
-            
+
             m['tags'].append(url_domain)
             m['tags'].append('video')
 
@@ -138,7 +137,7 @@ class MarksImportThread(Thread):
 
             self.m = m
             return
-        
+
         # Check content type
         try:
             with requests.head(url, timeout=4) as r:
@@ -152,8 +151,8 @@ class MarksImportThread(Thread):
         except Exception as e:
             print('requests connection error')
             print(e)
-            return 
-        
+            return
+
         # Parse article content
         article = Article(url)
 
@@ -161,7 +160,7 @@ class MarksImportThread(Thread):
             article.download()
         except ArticleBinaryDataException:
             print(f"URL {url} is binary data")
-            
+
         try:
             article.parse()
             article.nlp()
@@ -184,15 +183,15 @@ class MarksImportThread(Thread):
                 m['full_html'] = url
 
             m['title'] = readable_title if readable_title else url
-            
+
             # Add tags and keywords
             m['tags'].append(url_domain)
 
             for auto_tag in article.keywords[:5]:
                 m['tags'].append(auto_tag)
-                    
+
         print(f'New bookmark: "{m["title"]}", added.')
-        
+
         self.m = m
         self.insert_mark_thread()
 
@@ -215,7 +214,7 @@ class MarksImportThread(Thread):
 
             for auto_tag in data['tags']:
                 m.tags.append(Tag(auto_tag))
-            
+
             try:
                 db.session.add(m)
                 db.session.commit()

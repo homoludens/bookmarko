@@ -27,9 +27,9 @@ def login():
     """Handle user login."""
     if g.user.is_authenticated:
         return redirect(url_for('marks.allmarks'))
-    
+
     form = LoginForm()
-    
+
     if form.validate_on_submit():
         u = User.by_uname_or_email(form.username.data)
         if u and u.authenticate_user(form.password.data):
@@ -42,7 +42,7 @@ def login():
         else:
             flash(f'Failed login for {form.username.data}.', category='danger')
             return redirect(url_for('auth.login'))
-    
+
     return render_template('auth/login.html', title='Login', form=form)
 
 

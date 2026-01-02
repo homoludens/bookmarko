@@ -10,7 +10,6 @@ from collections.abc import Iterable
 from datetime import datetime
 from itertools import islice
 from threading import Thread
-from typing import Any
 from urllib.parse import urlparse
 
 import feedparser
@@ -28,8 +27,6 @@ from flask import (
     url_for,
 )
 from flask_login import login_required
-from newspaper import Article, ArticleBinaryDataException
-from readability.readability import Document
 from sqlalchemy_fulltext import FullTextSearch
 import sqlalchemy_fulltext.modes as FullTextMode
 from werkzeug.utils import secure_filename
@@ -44,7 +41,6 @@ from flaskmarks.forms import (
     MarksImportForm,
 )
 from flaskmarks.models import Mark
-from flaskmarks.models.tag import Tag
 
 # Suppress SQLAlchemy fulltext cache warning
 FullTextSearch.inherit_cache = False
@@ -69,10 +65,10 @@ marks = Blueprint('marks', __name__)
 def uri_validator(url_to_test: str) -> bool:
     """
     Validate URL format.
-    
+
     Args:
         url_to_test: URL string to validate
-    
+
     Returns:
         True if valid URL, False otherwise
     """
@@ -188,7 +184,7 @@ def new_mark(type: str):
         abort(404)
 
     form = YoutubeMarkForm() if type == 'youtube' else MarkForm()
-    
+
     if form.validate_on_submit():
         # Check if mark with this URL exists
         if g.user.q_marks_by_url(form.url.data):
@@ -197,7 +193,7 @@ def new_mark(type: str):
                 category='danger'
             )
             return redirect(url_for('marks.allmarks'))
-        
+
         m = Mark(u.id)
         form.populate_obj(m)
         m.type = type
@@ -206,10 +202,10 @@ def new_mark(type: str):
         if not form.title.data:
             r = MarksImportThread(form.url.data, u.id)
             m = r.run()
-            
+
         flash(f'New {type}: "{m["title"]}", added.', category='success')
         return redirect(url_for('marks.allmarks'))
-    
+
     return render_template(
         f'mark/new_{type}.html',
         title=f'New {type}',
@@ -249,10 +245,10 @@ def edit_mark(id: int):
     """Edit an existing mark."""
     m = g.user.get_mark_by_id(id)
     form = MarkEditForm(obj=m)
-    
+
     if not m:
         abort(403)
-    
+
     if form.validate_on_submit():
         if m.url != form.url.data and g.user.q_marks_by_url(form.url.data):
             flash(
@@ -260,17 +256,17 @@ def edit_mark(id: int):
                 category='danger'
             )
             return redirect(url_for('marks.allmarks'))
-        
+
         form.populate_obj(m)
         m.updated = datetime.utcnow()
         db.session.add(m)
         db.session.commit()
         flash(f'Mark "{form.title.data}" updated.', category='success')
-        
+
         if form.referrer.data and is_safe_url(form.referrer.data):
             return redirect(form.referrer.data)
         return redirect(url_for('marks.allmarks'))
-    
+
     form.referrer.data = request.referrer
     return render_template(
         'mark/edit.html',
@@ -361,15 +357,15 @@ def flatten(items: Iterable) -> Iterable:
 def iterdict2(d: dict | list) -> list[str]:
     """
     Extract all URIs from nested Firefox bookmark JSON structure.
-    
+
     Args:
         d: Dictionary or list from Firefox bookmarks JSON
-    
+
     Returns:
         List of bookmark URIs
     """
     final_list: list = []
-    
+
     if isinstance(d, dict) and 'children' in d:
         final_list.append(iterdict2(d['children']))
     elif isinstance(d, list):
@@ -379,20 +375,20 @@ def iterdict2(d: dict | list) -> list[str]:
                     final_list.append(iterdict2(bookmark['children']))
                 if 'uri' in bookmark:
                     final_list.append(bookmark['uri'])
-    
+
     return list(flatten(final_list))
 
 
 def _thread_import_file(text_file_path: str, app, user_id: int) -> None:
     """
     Import bookmarks from a text file in a background thread.
-    
+
     Args:
         text_file_path: Path to the text file with URLs
         app: Flask application instance
         user_id: ID of the user to import marks for
     """
-    global _import_status, _total_lines
+    global _import_status
     maxthreads = 20
     _import_status = 0
 
@@ -401,7 +397,7 @@ def _thread_import_file(text_file_path: str, app, user_id: int) -> None:
             lines_gen = list(islice(fp, maxthreads))
             if not lines_gen:
                 break
-            
+
             lines_new = []
             for line in lines_gen:
                 _import_status += 1
@@ -437,11 +433,11 @@ def import_marks():
         f = form.file.data
         filename = secure_filename(f.filename)
         filepath = os.path.join(current_app.root_path, 'files', filename)
-        
+
         # Ensure files directory exists
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         f.save(filepath)
-        
+
         if f.content_type == 'text/plain':
             with open(filepath) as fp:
                 _total_lines = sum(1 for _ in fp)
@@ -458,7 +454,7 @@ def import_marks():
                 total_lines=_total_lines,
                 status=1
             )
-    
+
     _import_status = 0
     return render_template('profile/import_progress.html', form=form, status=0)
 
@@ -467,7 +463,6 @@ def import_marks():
 @login_required
 def get_import_status():
     """Get current import status (AJAX endpoint)."""
-    global _import_status, _total_lines
     return json.dumps({'status': _import_status, 'total_lines': _total_lines})
 
 

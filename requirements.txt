@@ -13,6 +13,7 @@ python-dotenv>=1.0.0
 # Database
 sqlalchemy>=2.0.0
 mysqlclient>=2.2.0
+psycopg2-binary>=2.9.6
 SQLAlchemy-FullText-Search>=0.2.3
 
 # Forms and validation

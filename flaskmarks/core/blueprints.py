@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 def register_blueprints(app: Flask) -> None:
     """
     Register all application blueprints.
-    
+
     Args:
         app: The Flask application instance
     """
@@ -20,7 +20,7 @@ def register_blueprints(app: Flask) -> None:
     from flaskmarks.views.auth import auth
     from flaskmarks.views.tags import tags
     from flaskmarks.views.marks import marks
-    
+
     app.register_blueprint(profile)
     app.register_blueprint(auth)
     app.register_blueprint(tags)

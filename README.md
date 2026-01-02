@@ -109,4 +109,15 @@ TODO
 
 
 
+Database
+========
 
+PostgreSQL:
+
+CREATE DATABASE bookmarko;
+CREATE USER bookm_user WITH ENCRYPTED PASSWORD 'digestpass';
+GRANT ALL PRIVILEGES ON DATABASE bookmarko TO bookm_user;
+GRANT USAGE, CREATE ON SCHEMA public TO bookm_user;
+ALTER DATABASE bookmarko OWNER TO bookm_user;
+
+DATABASE_URL="postgresql://bookm_user:digestpass@localhost:5432/bookmarko"
