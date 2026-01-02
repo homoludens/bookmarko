@@ -19,6 +19,108 @@ from flaskmarks.models import Mark
 from flaskmarks.models.tag import Tag
 
 
+def fetch_url_metadata(url: str) -> dict[str, Any] | None:
+    """
+    Fetch metadata from a URL without saving to database.
+
+    Args:
+        url: The URL to fetch metadata from
+
+    Returns:
+        Dictionary with extracted metadata or None if failed
+    """
+    url_domain = tldextract.extract(url).domain
+    readable_title = None
+
+    m: dict[str, Any] = {
+        'type': 'bookmark',
+        'tags': [],
+        'url': url,
+        'title': url,
+        'description': '',
+        'full_html': '',
+    }
+
+    # Handle YouTube URLs
+    if url_domain in ['youtube', 'youtu'] and check_url_video(url):
+        print(f"Processing YouTube URL: {url_domain}")
+        try:
+            youtube_info = get_youtube_info(url)
+            m['title'] = youtube_info['title']
+            m['description'] = youtube_info['description']
+            m['full_html'] = (
+                youtube_info['description'] + youtube_info['subtitles']
+            )
+
+            m['tags'].append(url_domain)
+            m['tags'].append('video')
+
+            if youtube_info['uploader']:
+                m['tags'].append(youtube_info['uploader'])
+
+            for auto_tag in youtube_info['tags']:
+                m['tags'].append(auto_tag)
+
+            return m
+        except Exception as e:
+            print(f"YouTube extraction failed: {e}")
+            return m
+
+    # Check content type
+    try:
+        with requests.head(url, timeout=4) as r:
+            content_type = r.headers.get('content-type', 'none')
+
+            if 'text' not in content_type:
+                m['tags'].append('binary_file')
+                print(f'URL {url} is not text content')
+                return m
+    except Exception as e:
+        print(f'Connection error for {url}: {e}')
+        return None
+
+    # Parse article content
+    article = Article(url)
+
+    try:
+        article.download()
+    except ArticleBinaryDataException:
+        print(f"URL {url} is binary data")
+        return m
+
+    try:
+        article.parse()
+        article.nlp()
+    except Exception as e:
+        print(f"Article {url} parsing failed: {e}")
+    else:
+        if article.is_parsed:
+            full_html = article.html
+
+            if full_html:
+                readable = Document(full_html)
+                readable_html = readable.summary()
+                readable_title = readable.title()
+                m['full_html'] = readable_html
+                m['description'] = article.summary
+            else:
+                m['full_html'] = article.summary
+                m['description'] = article.summary
+        else:
+            m['full_html'] = url
+
+        m['title'] = readable_title if readable_title else url
+
+        # Add tags and keywords
+        m['tags'].append(url_domain)
+
+        for auto_tag in article.keywords[:5]:
+            m['tags'].append(auto_tag)
+
+    print(f'Metadata fetched for: "{m["title"]}"')
+    return m
+
+
 class MarksImportThread(Thread):
     """
     Thread class for importing a bookmark from a URL.

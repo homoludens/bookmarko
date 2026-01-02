@@ -11,6 +11,7 @@ from flask import (
     g,
     redirect,
     render_template,
+    request,
     url_for,
 )
 from flask_login import login_required
@@ -22,10 +23,31 @@ from flaskmarks.models import User
 profile = Blueprint('profile', __name__)
 
 
+def generate_bookmarklet(token: str, server_url: str) -> str:
+    """Generate bookmarklet JavaScript code."""
+    return f"""javascript:(function(){{
+var url=encodeURIComponent(location.href);
+var title=encodeURIComponent(document.title);
+var xhr=new XMLHttpRequest();
+xhr.open('POST','{server_url}/api/v1/quickadd',true);
+xhr.setRequestHeader('Content-Type','application/json');
+xhr.setRequestHeader('Authorization','Bearer {token}');
+xhr.onload=function(){{
+    var r=JSON.parse(xhr.responseText);
+    if(r.success){{alert('Saved: '+r.data.title);}}
+    else{{alert('Error: '+r.error);}}
+}};
+xhr.onerror=function(){{alert('Network error');}};
+xhr.send(JSON.stringify({{url:decodeURIComponent(url),title:decodeURIComponent(title)}}));
+}})();""".replace('\n', '').replace('    ', '')
+
+
 @profile.route('/profile', methods=['GET', 'POST'])
 @login_required
 def userprofile():
     """Display and update user profile."""
+    from flaskmarks.api.auth import generate_token, TOKEN_VALIDITY
+
     u = g.user
     form = UserProfileForm(obj=u)
 
@@ -40,6 +62,11 @@ def userprofile():
         flash(f'User "{form.username.data}" updated.', category='success')
         return redirect(url_for('profile.userprofile'))
 
+    # Generate API token and bookmarklet
+    api_token = generate_token(u)
+    server_url = request.host_url.rstrip('/')
+    bookmarklet = generate_bookmarklet(api_token, server_url)
+
     return render_template(
         'profile/view.html',
         form=form,
@@ -47,7 +74,11 @@ def userprofile():
         bc=g.user.get_mark_type_count('bookmark'),
         fc=g.user.get_mark_type_count('feed'),
         yc=g.user.get_mark_type_count('youtube'),
-        lcm=g.user.mark_last_created()
+        lcm=g.user.mark_last_created(),
+        api_token=api_token,
+        token_validity_hours=TOKEN_VALIDITY // 3600,
+        bookmarklet=bookmarklet,
+        server_url=server_url
     )
 
 

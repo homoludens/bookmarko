@@ -11,6 +11,105 @@
             {% endif %}
             <li class="list-group-item"><strong>Last logon:</strong> {{ g.user.last_logged }}</li>
         </ul>
+
+        <hr>
+
+        <h3>API Access</h3>
+        <p class="text-muted">Use this token to access the REST API from external applications.</p>
+        
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4 class="panel-title">API Token</h4>
+            </div>
+            <div class="panel-body">
+                <p><small class="text-muted">Valid for {{ token_validity_hours }} hours. Refresh this page to generate a new token.</small></p>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="api-token" value="{{ api_token }}" readonly>
+                    <span class="input-group-btn">
+                        <button class="btn btn-default" type="button" onclick="copyToClipboard('api-token')" title="Copy to clipboard">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                    </span>
+                </div>
+                <p class="help-block" style="margin-top: 10px;">
+                    <strong>Usage:</strong> Include in HTTP header: <code>Authorization: Bearer &lt;token&gt;</code>
+                </p>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4 class="panel-title">Bookmarklet</h4>
+            </div>
+            <div class="panel-body">
+                <p>Drag this button to your bookmarks bar to save pages with one click:</p>
+                <p>
+                    <a class="btn btn-primary" href="{{ bookmarklet }}" onclick="alert('Drag this button to your bookmarks bar!'); return false;">
+                        <i class="bi bi-bookmark-plus"></i> Save to Flaskmarks
+                    </a>
+                </p>
+                <hr>
+                <p><strong>Or copy the bookmarklet code:</strong></p>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="bookmarklet-code" value="{{ bookmarklet }}" readonly>
+                    <span class="input-group-btn">
+                        <button class="btn btn-default" type="button" onclick="copyToClipboard('bookmarklet-code')" title="Copy to clipboard">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                    </span>
+                </div>
+                <p class="help-block" style="margin-top: 10px;">
+                    <strong>Manual setup:</strong> Create a new bookmark, then paste this code as the URL.
+                </p>
+            </div>
+        </div>
+
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h4 class="panel-title">API Endpoints</h4>
+            </div>
+            <div class="panel-body">
+                <p><strong>Base URL:</strong> <code>{{ server_url }}/api/v1</code></p>
+                <table class="table table-condensed">
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>POST /quickadd</code></td><td>Quick-add bookmark (for extensions)</td></tr>
+                        <tr><td><code>GET /marks</code></td><td>List all bookmarks</td></tr>
+                        <tr><td><code>POST /marks</code></td><td>Create bookmark</td></tr>
+                        <tr><td><code>GET /marks/search?q=</code></td><td>Search bookmarks</td></tr>
+                        <tr><td><code>GET /tags</code></td><td>List all tags</td></tr>
+                        <tr><td><code>POST /auth/refresh</code></td><td>Refresh token</td></tr>
+                    </tbody>
+                </table>
+                <p><a href="https://github.com/your-repo/flaskmarks#rest-api" target="_blank">View full API documentation</a></p>
+            </div>
+        </div>
+
+        <hr>
+
+        <h3>Profile Settings</h3>
         {{ wtf.quick_form(form,  button_map={'submit_button': 'primary'}) }}
     </div>
+
+    <script>
+    function copyToClipboard(elementId) {
+        var copyText = document.getElementById(elementId);
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(copyText.value).then(function() {
+                alert('Copied to clipboard!');
+            });
+        } else {
+            document.execCommand('copy');
+            alert('Copied to clipboard!');
+        }
+    }
+    </script>
 {% endblock %}

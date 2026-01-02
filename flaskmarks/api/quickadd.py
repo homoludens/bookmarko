@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 from flask import request, g, current_app
 
 from flaskmarks.core.extensions import db
-from flaskmarks.core.marks_import_thread import MarksImportThread
+from flaskmarks.core.marks_import_thread import fetch_url_metadata
 from flaskmarks.models.mark import Mark
 from flaskmarks.models.tag import Tag
 
@@ -43,17 +43,12 @@ def async_metadata_extraction(mark_id: int, url: str, app) -> None:
     """
     with app.app_context():
         try:
-            # Use the existing import thread logic but just get data
-            importer = MarksImportThread(url, 0)  # user_id not needed for extraction
-            importer.url = url
-            importer.get_url_data()
+            # Fetch metadata without inserting
+            data = fetch_url_metadata(url)
 
-            if importer.m:
+            if data:
                 mark = Mark.query.get(mark_id)
                 if mark:
-                    # Update with extracted metadata if current values are minimal
-                    data = importer.m
-
                     # Update title if it was just the URL
                     if mark.title == url and data.get('title') and data['title'] != url:
                         mark.title = data['title']
@@ -70,7 +65,7 @@ def async_metadata_extraction(mark_id: int, url: str, app) -> None:
                     if data.get('tags'):
                         existing_tag_titles = {t.title.lower() for t in mark.tags}
                         for tag_title in data['tags']:
-                            tag_title = tag_title.lower().strip()
+                            tag_title = str(tag_title).lower().strip()
                             if tag_title and tag_title not in existing_tag_titles:
                                 tag = Tag.check(tag_title)
                                 if not tag:
@@ -80,10 +75,12 @@ def async_metadata_extraction(mark_id: int, url: str, app) -> None:
 
                     mark.updated = dt.utcnow()
                     db.session.commit()
-                    current_app.logger.info(f"Metadata extracted for mark {mark_id}")
+                    current_app.logger.info(f"Metadata extracted for mark {mark_id}: {mark.title}")
 
         except Exception as e:
             current_app.logger.error(f"Error extracting metadata for mark {mark_id}: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 @api_v1.route('/quickadd', methods=['POST'])
