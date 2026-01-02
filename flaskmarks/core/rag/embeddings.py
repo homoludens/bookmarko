@@ -56,6 +56,8 @@ class EmbeddingService:
         """
         Update embedding for a single mark.
 
+        Uses raw SQL to avoid triggering the search_vector update listener.
+
         Args:
             mark: Mark instance to update
 
@@ -63,16 +65,33 @@ class EmbeddingService:
             True if successful, False otherwise
         """
         from flaskmarks.core.extensions import db
+        from sqlalchemy import text
 
         try:
-            text = mark.get_embedding_text()
-            embedding = self.generate_embedding(text)
+            embedding_text = mark.get_embedding_text()
+            embedding = self.generate_embedding(embedding_text)
+            now = datetime.utcnow()
 
-            mark.embedding = embedding
-            mark.embedding_updated = datetime.utcnow()
+            # Use raw SQL to update only embedding columns
+            # This avoids triggering the search_vector update
+            sql = text("""
+                UPDATE marks
+                SET embedding = :embedding::vector,
+                    embedding_updated = :updated
+                WHERE id = :mark_id
+            """)
 
-            db.session.add(mark)
+            db.session.execute(sql, {
+                'embedding': str(embedding),
+                'updated': now,
+                'mark_id': mark.id
+            })
             db.session.commit()
+
+            # Update the in-memory object too
+            mark.embedding = embedding
+            mark.embedding_updated = now
+
             return True
         except Exception as e:
             current_app.logger.error(
@@ -90,6 +109,8 @@ class EmbeddingService:
         """
         Update embeddings for multiple marks in batches.
 
+        Uses raw SQL to avoid triggering the search_vector update listener.
+
         Args:
             marks: List of Mark instances
             batch_size: Number of marks to process at once
@@ -99,6 +120,7 @@ class EmbeddingService:
             Tuple of (successful_count, failed_count)
         """
         from flaskmarks.core.extensions import db
+        from sqlalchemy import text
 
         model = self._get_model()
         successful = 0
@@ -111,11 +133,23 @@ class EmbeddingService:
 
             try:
                 embeddings = model.encode(texts, normalize_embeddings=True)
+                now = datetime.utcnow()
 
+                # Use raw SQL to update only embedding columns
+                # This avoids triggering the search_vector update
                 for mark, embedding in zip(batch, embeddings):
-                    mark.embedding = embedding.tolist()
-                    mark.embedding_updated = datetime.utcnow()
-                    db.session.add(mark)
+                    sql = text("""
+                        UPDATE marks
+                        SET embedding = :embedding::vector,
+                            embedding_updated = :updated
+                        WHERE id = :mark_id
+                    """)
+
+                    db.session.execute(sql, {
+                        'embedding': str(embedding.tolist()),
+                        'updated': now,
+                        'mark_id': mark.id
+                    })
 
                 db.session.commit()
                 successful += len(batch)
