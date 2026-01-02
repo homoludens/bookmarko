@@ -22,7 +22,8 @@ def get_embedding_model():
             'EMBEDDING_MODEL',
             'sentence-transformers/all-MiniLM-L6-v2'
         )
-        _embedding_model = SentenceTransformer(model_name)
+        _embedding_model = SentenceTransformer(model_name, cache_folder='./cache')
+        _embedding_model.save('sentence-transformers.model')
     return _embedding_model
 
 
@@ -74,9 +75,10 @@ class EmbeddingService:
 
             # Use raw SQL to update only embedding columns
             # This avoids triggering the search_vector update
+            # Use CAST() instead of :: to avoid SQLAlchemy parameter parsing issues
             sql = text("""
                 UPDATE marks
-                SET embedding = :embedding::vector,
+                SET embedding = CAST(:embedding AS vector),
                     embedding_updated = :updated
                 WHERE id = :mark_id
             """)
@@ -137,10 +139,11 @@ class EmbeddingService:
 
                 # Use raw SQL to update only embedding columns
                 # This avoids triggering the search_vector update
+                # Use CAST() instead of :: to avoid SQLAlchemy parameter parsing issues
                 for mark, embedding in zip(batch, embeddings):
                     sql = text("""
                         UPDATE marks
-                        SET embedding = :embedding::vector,
+                        SET embedding = CAST(:embedding AS vector),
                             embedding_updated = :updated
                         WHERE id = :mark_id
                     """)
@@ -161,4 +164,5 @@ class EmbeddingService:
             if progress_callback:
                 progress_callback(min(i + batch_size, total), total)
 
+            current_app.logger.info(f"successful: {successful}, failed: {failed}")
         return successful, failed

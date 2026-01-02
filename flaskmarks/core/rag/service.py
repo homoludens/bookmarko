@@ -89,11 +89,11 @@ class RAGService:
         # Query pgvector for similar marks owned by the user
         # Using cosine distance (1 - cosine_similarity)
         sql = text("""
-            SELECT id, 1 - (embedding <=> :query_embedding::vector) as similarity
+            SELECT id, 1 - (embedding <=>  CAST(:query_embedding AS vector)) as similarity
             FROM marks
             WHERE owner_id = :user_id
               AND embedding IS NOT NULL
-            ORDER BY embedding <=> :query_embedding::vector
+            ORDER BY embedding <=>  CAST(:query_embedding AS vector)
             LIMIT :top_k
         """)
 
@@ -168,7 +168,7 @@ Content excerpt: {content}
         Returns:
             Tuple of (response_text, tokens_used)
         """
-        model = current_app.config.get('GROQ_MODEL', 'llama-3.1-70b-versatile')
+        model = current_app.config.get('GROQ_MODEL', 'openai/gpt-oss-120b')
         temperature = current_app.config.get('GROQ_TEMPERATURE', 0.7)
         max_tokens = current_app.config.get('GROQ_MAX_TOKENS', 1024)
 
