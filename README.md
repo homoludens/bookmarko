@@ -253,3 +253,59 @@ All API responses follow this format:
 }
 ```
 
+## Quick-Add Endpoint (Browser Extension Support)
+
+The quick-add endpoint is designed for browser extensions and bookmarklets to save bookmarks with a single click.
+
+### Endpoint
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/quickadd` | Quick-add a bookmark |
+| GET | `/api/v1/quickadd` | Quick-add via GET (bookmarklet) |
+| GET | `/api/v1/quickadd/status/<id>` | Check bookmark status |
+| GET | `/api/v1/bookmarklet/script?token=<token>` | Generate bookmarklet code |
+
+### Quick-Add Request
+```bash
+curl -X POST http://localhost:5000/api/v1/quickadd \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/article",
+    "title": "Optional Title",
+    "tags": ["optional", "tags"]
+  }'
+```
+
+### Response
+```json
+{
+  "success": true,
+  "data": {
+    "id": 123,
+    "url": "https://example.com/article",
+    "title": "Article Title",
+    "status": "created",
+    "metadata_extraction": "pending"
+  },
+  "message": "Bookmark saved"
+}
+```
+
+The endpoint:
+- Returns immediately with the bookmark ID
+- Triggers async metadata extraction (title, description, content)
+- Detects duplicates and returns existing bookmark info
+- Supports JSON, form data, and query parameters
+
+### Bookmarklet Setup
+
+1. Get your bookmarklet code:
+```bash
+curl "http://localhost:5000/api/v1/bookmarklet/script?token=YOUR_TOKEN"
+```
+
+2. Create a new bookmark in your browser
+3. Paste the bookmarklet code as the URL
+4. Click the bookmark on any page to save it instantly
+
