@@ -1,5 +1,6 @@
 # flaskmarks/views/profile.py
 import threading
+from venv import logger
 # from flask.globals import _request_ctx_stack
 from flask import (
     Blueprint,
@@ -27,6 +28,8 @@ from typing import Iterable
 from newspaper import Article, ArticleBinaryDataException
 #from gensim.summarization import keywords
 from werkzeug.utils import secure_filename
+from bs4 import BeautifulSoup
+from typing import List
 
 from ..core.setup import app, db
 from ..core.error import is_safe_url
@@ -63,6 +66,7 @@ from sqlalchemy import func
 
 status = 0
 total_lines = 0
+import_complete = False
 
 pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
@@ -76,6 +80,48 @@ def uri_validator(url_to_test):
         return all([result.scheme, result.netloc])
     except:
         return False
+
+
+def extract_urls_from_bookmarks(file_path: str) -> List[str]:
+    """
+    Extract all URLs from a browser bookmark HTML file.
+
+    Args:
+        file_path (str): Path to the bookmark HTML file
+
+    Returns:
+        List[str]: A list of all URLs found in the bookmark file
+
+    Example:
+        >>> urls = extract_urls_from_bookmarks('bookmarks.html')
+        >>> print(f"Found {len(urls)} URLs")
+        >>> print(urls[:5])  # Print first 5 URLs
+    """
+    urls = []
+
+    try:
+        # Read the HTML file
+        with open(file_path, 'r', encoding='utf-8') as file:
+            html_content = file.read()
+
+        # Parse the HTML
+        soup = BeautifulSoup(html_content, 'html.parser')
+
+        # Find all anchor tags with HREF attribute
+        for link in soup.find_all('a', href=True):
+            url = link['href']
+            # Filter out any non-http(s) URLs (like javascript:, place:, etc.)
+            if url.startswith('http://') or url.startswith('https://'):
+                urls.append(url)
+
+    except FileNotFoundError:
+        print(f"Error: File '{file_path}' not found.")
+    except Exception as e:
+        print(f"Error processing file: {e}")
+
+    return urls
+
+
 
 logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
 
@@ -411,34 +457,51 @@ def flatten(items):
 ###################
 
 
-def thread_import_file(text_file_path, app, user_id):
+def thread_import_file(text_file_path: str|List[str], app, user_id: int):
     maxthreads = 20
     global status
     global total_lines
+    global import_complete
+    
     status = 0
-    i = 0
+    import_complete = False
+    lines_new = []
 
-    with open(text_file_path) as fp:
-        while True:
-            lines_gen = islice(fp, maxthreads)
-            # print(list(lines_gen))
-            lines_new = []
-            for line in lines_gen:
-                status += 1
-                # line = fp.readline()
-                if not lines_gen:
-                    break
-                print("Line{}: {}".format(status, line.strip()))
-                url = line.strip()
-                lines_new.append(url)
+    if isinstance(text_file_path, str):
+        # Reading from a text file with URLs
+        with open(text_file_path) as fp:
+            lines_new = [line.strip() for line in fp if line.strip()]
+        total_lines = len(lines_new)
+    elif isinstance(text_file_path, list):
+        lines_new = text_file_path
+        total_lines = len(lines_new)
+    else:
+        raise TypeError("text_file_path must be a string or a list of strings")
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=maxthreads) as exe:
-                zip( lines_new, [user_id] * len(lines_new) )
-                result = exe.map(marks_import_threads, zip( lines_new, [user_id] * len(lines_new)))
+    if not lines_new:
+        import_complete = True
+        return
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=maxthreads) as exe:
+        futures = []
+        for url in lines_new:
+            future = exe.submit(marks_import_threads, (url, user_id))
+            futures.append(future)
+        
+        # Wait for each future and update status
+        for future in concurrent.futures.as_completed(futures):
+            status += 1
+            try:
+                future.result()
+            except Exception as e:
+                print(f"Import error: {e}")
+    
+    import_complete = True
 
 
 def marks_import_threads(url_user_id):
     url, user_id = url_user_id
+    logger.info(f"importing url: {url}")
     r = MarksImportThread(url, user_id)
     r.run()
 
@@ -448,48 +511,78 @@ def marks_import_threads(url_user_id):
 def import_marks():
     global status
     global total_lines
+    global import_complete
 
-    app.logger.error('Processing default request')
+    app.logger.info('Processing default request')
     u = g.user
     form = MarksImportForm(obj=u)
 
     if form.validate_on_submit():
         f = form.file.data
         filename = secure_filename(f.filename)
-        f.save(os.path.join(
-            app.root_path, 'files', filename
-        ))
+        
+        # Ensure files directory exists
+        files_dir = os.path.join(app.root_path, 'files')
+        os.makedirs(files_dir, exist_ok=True)
+        
+        file_path = os.path.join(files_dir, filename)
+        f.save(file_path)
+
+        # Reset status for new import
+        status = 0
+        total_lines = 0
+        import_complete = False
 
         if f.content_type == 'text/plain':
-            count = 0
-            text_file_path = os.path.join(
-                app.root_path, 'files', filename
-            )
+            app.logger.info(f"content_type: {f.content_type}")
+            
+            # Count lines for progress
+            with open(file_path) as fp:
+                lines = [line.strip() for line in fp if line.strip()]
+                total_lines = len(lines)
 
-            with open(text_file_path) as fp:
-                for total_lines, line in enumerate(fp):
-                    pass
+            print('Total Lines', total_lines)
+            import_data = file_path  # Pass file path for text files
+            
+        elif f.content_type == 'text/html':
+            app.logger.info(f"content_type: {f.content_type}")
+            
+            # Extract URLs from HTML bookmark file
+            urls = extract_urls_from_bookmarks(file_path)
+            total_lines = len(urls)
+            print('Total URLs from HTML', total_lines)
+            import_data = urls  # Pass list of URLs for HTML files
+            
+        else:
+            flash('Unsupported file type. Please upload a .txt or .html file.', category='danger')
+            return render_template('profile/import_progress.html', form=form, status=0)
 
-            print('Total Lines', total_lines + 1)
+        if total_lines == 0:
+            flash('No URLs found in the uploaded file.', category='warning')
+            return render_template('profile/import_progress.html', form=form, status=0)
 
-            t1 = Thread(target=thread_import_file, args=(text_file_path, current_app._get_current_object(), u.id))
-            t1.start()
+        t1 = Thread(target=thread_import_file, args=(import_data, current_app._get_current_object(), u.id))
+        t1.start()
 
-        flash('%s marks imported' % (count), category='success')
-        return render_template('profile/import_progress.html', total_lines=total_lines, status=1 )
+        return render_template('profile/import_progress.html', total_lines=total_lines, status=1)
 
     status = 0
-
+    import_complete = False
     return render_template('profile/import_progress.html', form=form, status=0)
 
 # TODO: make this multiuser friendly
 @marks.route('/marks/import/status', methods=['GET', 'POST'])
 @login_required
 def getStatus():
-  global status
-  global total_lines
-  statusList = {'status':status, 'total_lines': total_lines}
-  return json.dumps(statusList)
+    global status
+    global total_lines
+    global import_complete
+    statusList = {
+        'status': status,
+        'total_lines': total_lines,
+        'complete': import_complete
+    }
+    return json.dumps(statusList)
 
 #########
 # Other #

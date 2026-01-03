@@ -53,5 +53,5 @@ class UserProfileForm(UserRegisterForm):
 class MarksImportForm(Form):
     file = FileField('Import file (Json)', validators=[
                      FileRequired(),
-                     FileAllowed(['json', 'txt'], 'Only json files')])
+                     FileAllowed(['json', 'txt', 'html', 'csv'], 'Only json, txt, html, csv files')])
     submit_button = SubmitField('Upload')

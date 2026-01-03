@@ -8,35 +8,56 @@
             <h2>Import marks</h2>
             {{ wtf.quick_form(form,  button_map={'submit_button': 'primary'}, enctype='multipart/form-data') }}
         {% else %}
-            <h2>Importing marks...</h2>
-            <div class="progress">
-                <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressbar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">0 of 100</div>
+            <h2 id="importTitle">Importing marks...</h2>
+            <p id="importStatus" class="text-muted">Starting import of {{ total_lines }} URLs...</p>
+            <div class="progress mb-3" style="height: 25px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressbar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">0 / {{ total_lines }}</div>
+            </div>
+            <div id="completionMessage" style="display: none;">
+                <div class="alert alert-success">
+                    Import completed! <a href="{{ url_for('marks.allmarks') }}" class="alert-link">View your marks</a>
+                </div>
             </div>
 
             <script>
                 var timeout;
+                var totalLines = {{ total_lines }};
                 
                 async function getStatus() {
-                
-                    let get;
+                    let data;
                     
                     try {
                         const res = await fetch("/marks/import/status");
-                        get = await res.json();
+                        data = await res.json();
                     } catch (e) {
-                        console.error("Error: ", e);
+                        console.error("Error fetching status:", e);
+                        timeout = setTimeout(getStatus, 2000);
+                        return;
                     }
                     
-                    progresElement = document.getElementById("progressbar");
-                    progresElement.ariaValueNow = get.status ;
-                    progresElement.style.width = (get.status/get.total_lines) * 100 + "%";
-                    progresElement.textContent = get.status + " of " + get.total_lines ;
-                    console.log(get.status)
-                    //   if (get.status == 10){
-                    //     document.getElementById("innerStatus").innerHTML += " Done.";
-                    //     clearTimeout(timeout);
-                    //     return false;
-                    //   }
+                    var progressElement = document.getElementById("progressbar");
+                    var statusElement = document.getElementById("importStatus");
+                    var total = data.total_lines || totalLines;
+                    var current = data.status || 0;
+                    var percentage = total > 0 ? (current / total) * 100 : 0;
+                    
+                    progressElement.setAttribute("aria-valuenow", current);
+                    progressElement.style.width = percentage + "%";
+                    progressElement.textContent = current + " / " + total;
+                    statusElement.textContent = "Processing: " + current + " of " + total + " URLs";
+                    
+                    console.log("Import progress:", current, "/", total, "Complete:", data.complete);
+                    
+                    if (data.complete) {
+                        // Import finished
+                        progressElement.classList.remove("progress-bar-animated");
+                        progressElement.classList.add("bg-success");
+                        document.getElementById("importTitle").textContent = "Import Complete!";
+                        statusElement.textContent = "Successfully processed " + current + " URLs.";
+                        document.getElementById("completionMessage").style.display = "block";
+                        clearTimeout(timeout);
+                        return;
+                    }
                     
                     timeout = setTimeout(getStatus, 1000);
                 }

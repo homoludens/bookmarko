@@ -44,12 +44,12 @@
                         {% endif %}
                     </div>
 
-                    <!-- Input form -->
-                    <form id="chatForm" method="POST">
+                    <!-- Input form - no action to prevent native form submission -->
+                    <form id="chatForm" onsubmit="return false;">
                         {{ form.hidden_tag() }}
                         <div class="input-group">
                             {{ form.query(class="form-control", id="queryInput") }}
-                            <button type="submit" class="btn btn-primary" id="sendBtn">
+                            <button type="button" class="btn btn-primary" id="sendBtn">
                                 Send
                             </button>
                         </div>
@@ -249,10 +249,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Handle form submission
-    chatForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-
+    // Send message function
+    async function sendMessage() {
         const query = queryInput.value.trim();
         if (!query) return;
 
@@ -288,13 +286,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         setLoading(false);
-    });
+    }
+
+    // Handle send button click
+    sendBtn.addEventListener('click', sendMessage);
 
     // Handle Enter key (send) and Shift+Enter (new line)
     queryInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            chatForm.dispatchEvent(new Event('submit'));
+            sendMessage();
         }
     });
 
