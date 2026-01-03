@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flaskmarks</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Flaskmarks</h1>
+    </header>
+
+    <!-- Settings Section (shown when not configured) -->
+    <section id="settings-section" class="section">
+      <h2>Settings</h2>
+      <form id="settings-form">
+        <div class="form-group">
+          <label for="server-url">Server URL</label>
+          <input type="url" id="server-url" placeholder="https://your-flaskmarks.com" required>
+        </div>
+        <div class="form-group">
+          <label for="api-token">API Token</label>
+          <input type="password" id="api-token" placeholder="Your API token" required>
+          <small>Get your token from Profile page in Flaskmarks</small>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+      </form>
+    </section>
+
+    <!-- Main Section (shown when configured) -->
+    <section id="main-section" class="section hidden">
+      <div class="connection-status">
+        <span id="status-indicator" class="status-dot"></span>
+        <span id="status-text">Checking connection...</span>
+      </div>
+
+      <div class="actions">
+        <button id="save-current" class="btn btn-primary">
+          <span class="icon">+</span>
+          Save Current Tab
+        </button>
+        <button id="save-all" class="btn btn-secondary">
+          <span class="icon">++</span>
+          Save All Tabs (<span id="tab-count">0</span>)
+        </button>
+      </div>
+
+      <div id="progress-section" class="hidden">
+        <div class="progress-bar">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <div id="progress-text" class="progress-text">Saving...</div>
+      </div>
+
+      <div id="results-section" class="hidden">
+        <h3>Results</h3>
+        <ul id="results-list"></ul>
+      </div>
+
+      <div class="footer-actions">
+        <button id="open-settings" class="btn btn-link">Settings</button>
+        <a id="open-flaskmarks" href="#" target="_blank" class="btn btn-link">Open Flaskmarks</a>
+      </div>
+    </section>
+
+    <!-- Messages -->
+    <div id="message" class="message hidden"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

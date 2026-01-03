@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="url(#bg)"/>
+  <!-- Bookmark icon -->
+  <path d="M44 24h40c2.2 0 4 1.8 4 4v76l-24-16-24 16V28c0-2.2 1.8-4 4-4z" 
+        fill="#6ea8fe" 
+        stroke="#fff" 
+        stroke-width="2"/>
+  <!-- Plus sign -->
+  <path d="M56 52h16M64 44v16" 
+        stroke="#fff" 
+        stroke-width="4" 
+        stroke-linecap="round"/>
+</svg>
