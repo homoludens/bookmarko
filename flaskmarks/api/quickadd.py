@@ -193,19 +193,16 @@ def quickadd():
 
     mark_id = mark.id
 
-    # Trigger async metadata extraction if title wasn't provided
-    # (meaning we should try to fetch it)
-    extraction_status = 'not_needed'
-    if not data.get('title'):
-        extraction_status = 'pending'
-        # Get the Flask app for the background thread
-        app = current_app._get_current_object()
-        thread = threading.Thread(
-            target=async_metadata_extraction,
-            args=(mark_id, url, app)
-        )
-        thread.daemon = True
-        thread.start()
+    # Always trigger async metadata extraction to get full_html, description, and tags
+    # even if title was provided by the extension
+    extraction_status = 'pending'
+    app = current_app._get_current_object()
+    thread = threading.Thread(
+        target=async_metadata_extraction,
+        args=(mark_id, url, app)
+    )
+    thread.daemon = True
+    thread.start()
 
     return api_response(
         {
