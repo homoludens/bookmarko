@@ -17,6 +17,16 @@
     <!-- Bootstrap Icons -->
     <link href="{{url_for('static', filename='vendor/bootstrap-icons/bootstrap-icons.min.css')}}" rel="stylesheet">
     {%- endblock styles %}
+    <!-- Theme initialization script (in head to prevent flash) -->
+    <script>
+      (function() {
+        var theme = localStorage.getItem('bookmarko-theme');
+        if (!theme) {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
     {%- endblock head %}
   </head>
   <body{% block body_attribs %}{% endblock body_attribs %}>

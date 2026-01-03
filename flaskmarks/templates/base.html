@@ -4,11 +4,12 @@
 {% block styles %}
     {{ super() }}
     <link rel="stylesheet" href="{{url_for('static', filename='css/mystyles.css')}}" />
-    
+    <link rel="stylesheet" href="{{url_for('static', filename='css/dark-mode.css')}}" />
 {% endblock %}
 
 {% block scripts %}
     {{super()}}
+    <script src="{{url_for('static', filename='js/theme.js')}}"></script>
     <script src="{{url_for('static', filename='js/myscripts.js')}}"></script>
 {% endblock %}
 
