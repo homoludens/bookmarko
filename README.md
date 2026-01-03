@@ -15,6 +15,92 @@ This can be used as "Read latter" app.
 
 
 
+Docker Deployment (Recommended)
+================================
+
+The easiest way to run Flaskmarks is with Docker.
+
+## Quick Start
+
+```bash
+# Clone the repository
+git clone <repo-url>
+cd bookmarko
+
+# Copy and configure environment
+cp .env.example .env
+# Edit .env with your settings (especially POSTGRES_PASSWORD and FLASK_SECRET_KEY)
+
+# Start the application
+docker compose up -d
+
+# View logs
+docker compose logs -f app
+```
+
+The application will be available at http://localhost:5000
+
+## Configuration
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+# Required
+POSTGRES_PASSWORD=your-secure-password
+FLASK_SECRET_KEY=your-secret-key  # Generate with: python -c "import secrets; print(secrets.token_hex(32))"
+
+# Optional: Create admin user on first start
+FLASKMARKS_ADMIN_USER=admin
+FLASKMARKS_ADMIN_PASSWORD=your-admin-password
+FLASKMARKS_ADMIN_EMAIL=admin@example.com
+
+# Optional: RAG/AI features
+RAG_ENABLED=true
+GROQ_API_KEY=your-groq-api-key
+```
+
+## Development with Docker
+
+For development with hot-reloading:
+
+```bash
+docker compose -f docker-compose.dev.yml up
+```
+
+## Docker Commands
+
+```bash
+# Build and start
+docker compose up -d --build
+
+# Stop
+docker compose down
+
+# Stop and remove volumes (deletes data!)
+docker compose down -v
+
+# View logs
+docker compose logs -f
+
+# Run Flask CLI commands
+docker compose exec app flask create-user
+docker compose exec app flask rag generate-embeddings
+
+# Access PostgreSQL
+docker compose exec db psql -U flaskmarks -d flaskmarks
+```
+
+## Data Persistence
+
+Docker volumes are used for:
+- `postgres-data`: PostgreSQL database
+- `embeddings-cache`: Cached embeddings
+- `model-cache`: Sentence-transformer model files
+
+
+Manual Installation
+===================
+
 Setting up virual envirement
 ============================
 
@@ -308,4 +394,3 @@ curl "http://localhost:5000/api/v1/bookmarklet/script?token=YOUR_TOKEN"
 2. Create a new bookmark in your browser
 3. Paste the bookmarklet code as the URL
 4. Click the bookmark on any page to save it instantly
-

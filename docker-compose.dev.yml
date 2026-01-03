@@ -1,0 +1,63 @@
+# Development docker-compose with hot reloading
+# Usage: docker compose -f docker-compose.dev.yml up
+
+services:
+  app:
+    build:
+      context: .
+      target: production
+    container_name: flaskmarks-dev
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://flaskmarks:flaskmarks@db:5432/flaskmarks
+      - FLASK_SECRET_KEY=dev-secret-key-not-for-production
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - RAG_ENABLED=${RAG_ENABLED:-true}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.1-70b-versatile}
+      - FLASKMARKS_ADMIN_USER=admin
+      - FLASKMARKS_ADMIN_PASSWORD=admin
+      - FLASKMARKS_ADMIN_EMAIL=admin@localhost
+    volumes:
+      - .:/app
+      - embeddings-cache:/app/cache
+      - model-cache:/app/sentence-transformers.model
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - flaskmarks-network
+    command: ["flask", "run", "--host=0.0.0.0", "--debug"]
+
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: flaskmarks-db-dev
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=flaskmarks
+      - POSTGRES_PASSWORD=flaskmarks
+      - POSTGRES_DB=flaskmarks
+    volumes:
+      - postgres-data-dev:/var/lib/postgresql/data
+      - ./docker-initdb.d:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flaskmarks -d flaskmarks"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flaskmarks-network
+
+volumes:
+  postgres-data-dev:
+  embeddings-cache:
+  model-cache:
+
+networks:
+  flaskmarks-network:
+    driver: bridge

@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv
+ENV
+env
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Development files
+*.log
+*.sql
+*.sqlite
+.flaskenv
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Documentation and screenshots
+*.mp4
+*.png
+screenshots/
+
+# Local data (will be mounted as volumes)
+cache/
+sentence-transformers.model/
+models--sentence-transformers--*/
+
+# Misc
+.locks/
+migrations_OLD/
+examples/
+record.log
