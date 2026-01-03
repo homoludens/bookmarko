@@ -1,22 +1,44 @@
 #!/bin/bash
 set -e
 
+# Debug: show DATABASE_URL (masking password)
+echo "DATABASE_URL: ${DATABASE_URL:-not set, using default}"
+
 # Wait for database to be ready
 echo "Waiting for PostgreSQL to be ready..."
-while ! python -c "
+MAX_RETRIES=30
+RETRY_COUNT=0
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if python -c "
 import psycopg2
 import os
 import sys
+
+db_url = os.environ.get('DATABASE_URL', 'postgresql://flaskmarks:flaskmarks@db:5432/flaskmarks')
+print(f'Trying to connect to: {db_url.split(\"@\")[1] if \"@\" in db_url else db_url}')
+
 try:
-    conn = psycopg2.connect(os.environ.get('DATABASE_URL', 'postgresql://localhost/flaskmarks'))
+    conn = psycopg2.connect(db_url)
     conn.close()
+    print('Connection successful!')
     sys.exit(0)
-except:
+except Exception as e:
+    print(f'Connection failed: {e}')
     sys.exit(1)
-" 2>/dev/null; do
-    echo "PostgreSQL is unavailable - sleeping"
+"; then
+        break
+    fi
+    
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    echo "PostgreSQL is unavailable - attempt $RETRY_COUNT/$MAX_RETRIES - sleeping"
     sleep 2
 done
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo "ERROR: Could not connect to PostgreSQL after $MAX_RETRIES attempts"
+    exit 1
+fi
 echo "PostgreSQL is ready!"
 
 # Run database migrations

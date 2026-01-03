@@ -48,9 +48,6 @@ COPY --chown=flaskmarks:flaskmarks . .
 RUN mkdir -p /app/cache /app/sentence-transformers.model && \
     chown -R flaskmarks:flaskmarks /app
 
-# Copy and set up entrypoint
-COPY --chmod=755 docker-entrypoint.sh /docker-entrypoint.sh
-
 # Switch to non-root user
 USER flaskmarks
 
@@ -67,5 +64,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5000/login || exit 1
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--threads", "2", "flaskmarks:create_app()"]

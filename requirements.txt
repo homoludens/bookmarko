@@ -14,9 +14,9 @@ python-dotenv>=1.0.0
 
 # Database
 sqlalchemy>=2.0.0
-mysqlclient>=2.2.0
+#mysqlclient>=2.2.0
 psycopg2-binary>=2.9.6
-SQLAlchemy-FullText-Search>=0.2.3
+#SQLAlchemy-FullText-Search>=0.2.3
 
 # Forms and validation
 wtforms>=3.1.0
@@ -50,6 +50,10 @@ gunicorn>=21.0.0
 ruff>=0.1.0
 
 # RAG and AI dependencies
+# cpu only pytorch
+#torch @ https://download.pytorch.org/whl/cpu/torch-2.0.1-cp311-cp311-linux_x86_64.whl
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
 sentence-transformers>=2.2.2
 llama-index>=0.10.0
 llama-index-llms-groq>=0.1.0

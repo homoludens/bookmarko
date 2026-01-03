@@ -55,11 +55,11 @@ import concurrent.futures
 from sqlalchemy.sql import text
 from sqlalchemy import func
 
-from sqlalchemy_fulltext import FullText, FullTextSearch
-import sqlalchemy_fulltext.modes as FullTextMode
+# from sqlalchemy_fulltext import FullText, FullTextSearch
+# import sqlalchemy_fulltext.modes as FullTextMode
 # Suppress warning
 # https://github.com/mengzhuo/sqlalchemy-fulltext-search/issues/21
-FullTextSearch.inherit_cache = False
+# FullTextSearch.inherit_cache = False
 
 status = 0
 total_lines = 0
