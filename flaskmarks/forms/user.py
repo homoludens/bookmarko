@@ -47,6 +47,9 @@ class UserProfileForm(UserRegisterForm):
                             choices=[('clicks', 'Clicks'),
                                      ('dateasc', 'Date asc'),
                                      ('datedesc', 'Date desc')])
+    theme = SelectField('Theme',
+                        choices=[('default', 'Default'),
+                                 ('delicious', 'Delicious (Classic)')])
     submit_button = SubmitField('Update')
 
 

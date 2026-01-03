@@ -1,75 +1,38 @@
 {% extends 'base.html' %}
 {% block content %}
-    <div class="container-fluid p-0">
-        <div class="delicious-layout">
-            <!-- Left Sidebar -->
-            <div class="sidebar-left sidebar">
-                <div class="user-info">
-                    <h2>{{ config['SITE_TITLE'] }}</h2>
-                    <div class="user-tabs">
-                        <a href="{{ url_for('marks.allmarks') }}">Bookmarks</a> |
-                        <a href="{{ url_for('tags.cloud') }}">Tags</a>
-                    </div>
-                </div>
-                {% if mark.tags %}
-                <div class="filter-section">
-                    <h4>Tags</h4>
-                    {% for t in mark.tags %}
-                        <a href="{{ url_for('marks.mark_q_tag', slug=t.title) }}">{{ t.title }}</a>
-                    {% endfor %}
-                </div>
-                {% endif %}
-                <div class="filter-section">
-                    <h4>Actions</h4>
-                    <a href="{{ url_for('marks.edit_mark', id=mark.id) }}">Edit this feed</a>
-                    <a href="{{ url_for('marks.allmarks') }}">Back to bookmarks</a>
-                </div>
+    <div class="container" role="main">
+        {% include "flash.html" %}
+        <h2>{{ mark.title|truncate(70) }}</h2>
+        {% if mark.tags %}
+            <div class="btn-group mb-3">
+                {% for t in mark.tags %}
+                    <a href="{{ url_for('marks.mark_q_tag', slug=t.title) }}" class="btn btn-outline-secondary" role="button">{{ t.title }}</a>
+                {% endfor %}
             </div>
-            
-            <!-- Main Content -->
-            <div class="main-content">
-                <div class="content-header">
-                    <span>{{ mark.title|truncate(50) }}</span>
-                </div>
-                <div class="p-3">
-                    {% include "flash.html" %}
-                    <div class="row">
-                        {% for entry in data['entries'] %}
-                        <div class="col-sm-6 col-md-4">
-                            <div class="card mb-3" style="border: 1px solid var(--border-color); border-radius: 3px;">
-                                {% if entry['media_thumbnail'] %}
-                                    <img class="card-img-top img-fluid" src="{{ entry['media_thumbnail'][0]['url'] }}" alt="thumbnail">
-                                {% endif %}
-                                <div class="card-body" style="padding: 12px;">
-                                    <p class="text-muted mb-1" style="font-size: 10px;">{{ entry['published'] }}</p>
-                                    {% for link in entry['links'] %}
-                                        {% if link['rel'] == 'alternate' or link['rel'] == 'enclosure'%}
-                                            <h5 class="card-title" style="font-size: 12px; margin-bottom: 5px;">
-                                                <a href="{{ link['href'] }}" style="color: var(--link-color);">{{ entry['title'] | truncate(40) }}</a>
-                                            </h5>
-                                        {% endif %}
-                                    {% endfor %}
-                                    <p class="card-text" style="font-size: 11px; color: var(--text-secondary);">
-                                        {{ entry['summary'] | truncate(80) }}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+        {% endif %}
+        <div class="row">
+            {% for entry in data['entries'] %}
+            <div class="col-sm-6 col-md-4">
+                <div class="card mb-3">
+                    {% if entry['media_thumbnail'] %}
+                        <img class="card-img-top img-fluid" src="{{ entry['media_thumbnail'][0]['url'] }}" alt="thumbnail">
+                    {% endif %}
+                    <div class="card-body">
+                        <ul class='statslist list-unstyled'>
+                            <li class='date text-muted'>{{ entry['published'] }}</li>
+                        </ul>
+                        {% for link in entry['links'] %}
+                            {% if link['rel'] == 'alternate' or link['rel'] == 'enclosure'%}
+                                <h5 class="card-title"><a href="{{ link['href'] }}">{{ entry['title'] | truncate(20) }}</a></h5>
+                            {% endif %}
                         {% endfor %}
+                        <p class="card-text">
+                            {{ entry['summary'] | truncate(60) }}
+                        </p>
                     </div>
                 </div>
             </div>
-            
-            <!-- Right Sidebar -->
-            <div class="sidebar-right tags-sidebar">
-                <h3>Feed Info</h3>
-                <div class="tag-list">
-                    <div class="tag-item">
-                        <span>Entries:</span>
-                        <span class="tag-count">{{ data['entries']|length }}</span>
-                    </div>
-                </div>
-            </div>
+            {% endfor %}
         </div>
     </div>
 {% endblock %}

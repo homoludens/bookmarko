@@ -1,0 +1,57 @@
+<!-- Delicious-style Header -->
+<div class="delicious-header">
+    <div class="d-flex align-items-center w-100">
+        <a class="delicious-logo" href="{{ url_for('marks.webroot') }}">
+            <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="">
+            {{ config['SITE_TITLE'] }}
+        </a>
+        <div class="delicious-nav">
+            {% if g.user.is_authenticated %}
+                <a href="{{ url_for('marks.allmarks') }}" class="active">Bookmarks</a>
+                <a href="{{ url_for('marks.recently_clicked') }}">Recent</a>
+                <a href="{{ url_for('tags.cloud') }}">Tags</a>
+                <a href="{{ url_for('chat.chat_page') }}">Chat</a>
+                <a href="{{ url_for('marks.new_mark_selector') }}">+ New</a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}">Login</a>
+                {% if config['CAN_REGISTER'] %}
+                    <a href="{{ url_for('profile.register') }}">Register</a>
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class="header-actions">
+            {% if g.user.is_authenticated %}
+                <div class="dropdown me-2">
+                    <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Profile
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('profile.userprofile') }}">Show Profile</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('marks.import_marks') }}">Import marks</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('marks.export_marks') }}">Export marks</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    </ul>
+                </div>
+            {% endif %}
+            <button class="nav-link" type="button" onclick="FlaskmarksShortcuts.showHelp()" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
+                <i class="bi bi-keyboard"></i>
+            </button>
+            <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle theme">
+                <i class="bi bi-moon-fill"></i>
+                <i class="bi bi-sun-fill"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Sub-navigation -->
+<div class="delicious-subnav">
+    {% if g.user.is_authenticated %}
+        <a href="{{ url_for('marks.new_mark', type='bookmark') }}">Save a new bookmark</a>
+        <a href="{{ url_for('marks.new_mark', type='feed') }}">Add a feed</a>
+        <a href="{{ url_for('tags.by_clicks') }}">Popular tags</a>
+        {% include "themes/delicious/searchform.html" %}
+    {% endif %}
+</div>

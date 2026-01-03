@@ -1,0 +1,69 @@
+{% extends "themes/delicious/base.html" %}
+{% block content %}
+    <div class="container-fluid p-0">
+        <div class="delicious-layout">
+            <!-- Left Sidebar -->
+            <div class="sidebar-left sidebar">
+                <div class="user-info">
+                    <h2>{{ config['SITE_TITLE'] }}</h2>
+                    <div class="user-tabs">
+                        <a href="{{ url_for('marks.allmarks') }}" class="fw-bold">Bookmarks</a> |
+                        <a href="{{ url_for('tags.cloud') }}">Tags</a>
+                    </div>
+                    <input type="text" class="tag-input" placeholder="Type a tag to filter..." id="tagFilter">
+                </div>
+                <div class="filter-section">
+                    <h4>Filter by</h4>
+                    <a href="{{ url_for('marks.allmarks') }}">All Bookmarks</a>
+                    <a href="{{ url_for('marks.recently_added') }}">Recently Added</a>
+                    <a href="{{ url_for('marks.recently_clicked') }}">Recently Clicked</a>
+                </div>
+                <div class="filter-section">
+                    <h4>Add New</h4>
+                    <a href="{{ url_for('marks.new_mark', type='bookmark') }}">+ Bookmark</a>
+                    <a href="{{ url_for('marks.new_mark', type='feed') }}">+ Feed</a>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="content-header">
+                    <span>Bookmarks <strong>{{ marks.total if marks.total is defined else marks|length }}</strong></span>
+                    <div class="search-box">
+                        Sorted by: <strong>Date, Newest First</strong>
+                    </div>
+                </div>
+                {% include "flash.html" %}
+                {% if marks %}
+                    {% include "themes/delicious/mark/list.html" %}
+                {% else %}
+                    <div class="p-3">
+                        <p>No marks found...</p>
+                        <p><a href="{{ url_for('marks.new_mark', type='bookmark') }}">Add your first bookmark</a></p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Right Sidebar - Popular Tags -->
+            <div class="sidebar-right tags-sidebar">
+                <h3>Popular Tags</h3>
+                <div class="tag-list" id="tagsList">
+                    <div class="mb-2">
+                        <a href="{{ url_for('tags.cloud') }}" class="d-block fw-bold" style="font-size: 12px;">View All Tags</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    document.getElementById('tagFilter').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            const filter = e.target.value.toLowerCase();
+            if (filter.length > 0) {
+                window.location.href = '{{ url_for("marks.mark_q_tag", slug="") }}' + encodeURIComponent(filter);
+            }
+        }
+    });
+    </script>
+{% endblock %}

@@ -1,0 +1,307 @@
+@charset "UTF-8";
+/* CSS Document - Bootstrap 5 compatible */
+
+/* ============================================
+   GLOBAL LAYOUT & TYPOGRAPHY
+   ============================================ */
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+}
+
+/* Add spacing below navbar */
+.navbar + .container,
+.navbar + .container-fluid {
+    padding-top: 1.5rem;
+}
+
+img {
+    vertical-align: middle;
+    max-width: 90%;
+}
+
+.container .full_html {
+    white-space: pre-wrap;
+}
+
+/* ============================================
+   NAVBAR STYLING - Clean and minimal
+   ============================================ */
+
+.navbar {
+    padding: 0.75rem 1rem;
+}
+
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.navbar .nav-link {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem !important;
+}
+
+/* Search form in navbar */
+.navbar .form-control {
+    font-size: 0.9rem;
+    border-radius: 2rem;
+    padding-left: 1rem;
+}
+
+.navbar .btn {
+    border-radius: 2rem;
+}
+
+/* ============================================
+   BOOKMARK LIST STYLING
+   ============================================ */
+
+/* Card-style list items with breathing room */
+.list-group-item {
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px !important;
+    border: 1px solid var(--border-color);
+    border-left: 3px solid transparent;
+    box-shadow: 0 1px 3px var(--shadow-color);
+    transition: all 0.2s ease;
+}
+
+.list-group-item:hover {
+    border-left-color: var(--link-color);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    transform: translateY(-1px);
+}
+
+/* Ensure proper spacing for list group items */
+.list-group-item h4,
+.list-group-item h5 {
+    margin-bottom: 0.5rem;
+}
+
+/* Bookmark title styling */
+.list-group-item h4 a,
+.list-group-item-heading a {
+    font-size: 1.1rem;
+    font-weight: 500;
+    line-height: 1.4;
+    text-decoration: none;
+}
+
+.list-group-item h4 a:hover,
+.list-group-item-heading a:hover {
+    text-decoration: underline;
+}
+
+/* De-emphasize click count badge - move to right, make subtle */
+.list-group-item .badge.bg-secondary {
+    font-size: 0.7rem;
+    font-weight: 400;
+    padding: 0.25rem 0.5rem;
+    opacity: 0.7;
+    float: right;
+    margin-left: 0.75rem;
+}
+
+/* Description styling - muted and better spacing */
+.list-group-item > div:not(.btn-toolbar) {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-top: 0.25rem;
+}
+
+/* ============================================
+   TAG PILLS - Smaller and cleaner
+   ============================================ */
+
+.list-group-item .btn-group .btn-outline-secondary {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 1rem !important;
+    border: none;
+    background: var(--bg-tertiary, #e9ecef);
+    color: var(--text-secondary, #6c757d);
+    margin-right: 0.25rem;
+}
+
+.list-group-item .btn-group .btn-outline-secondary:hover {
+    background: var(--link-color);
+    color: #fff;
+}
+
+/* Hide tag icon to simplify */
+.list-group-item .btn-group .btn-outline-secondary .bi-tag {
+    display: none;
+}
+
+/* ============================================
+   ACTION BUTTONS - Hide until hover
+   ============================================ */
+
+.list-group-item .btn-toolbar {
+    margin-top: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.list-group-item:hover .btn-toolbar {
+    opacity: 1;
+}
+
+/* Style action buttons (edit, view html) */
+.list-group-item .btn-toolbar > .btn {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.6rem;
+}
+
+/* Stats list styling for feed views */
+.statslist {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* ============================================
+   PAGINATION - Clean and minimal
+   ============================================ */
+
+.pagination {
+    margin-top: 1.5rem;
+    gap: 0.25rem;
+}
+
+.page-link {
+    border-radius: 6px !important;
+    border: 1px solid var(--border-color, #dee2e6);
+    padding: 0.5rem 0.85rem;
+    font-size: 0.9rem;
+}
+
+.page-item.active .page-link {
+    background-color: var(--link-color, #0d6efd);
+    border-color: var(--link-color, #0d6efd);
+}
+
+.page-items {
+    font-size: 0.85rem;
+}
+
+/* ============================================
+   LIST GROUP - Remove default borders for card style
+   ============================================ */
+
+.list-group {
+    gap: 0;
+}
+
+/* Keyboard navigation selection */
+.list-group-item.keyboard-selected {
+    outline: 2px solid #0d6efd;
+    outline-offset: -2px;
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+/* Keyboard shortcuts modal */
+.shortcuts-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1050;
+    justify-content: center;
+    align-items: center;
+}
+
+.shortcuts-modal.show {
+    display: flex;
+}
+
+.shortcuts-modal-content {
+    background: #fff;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.shortcuts-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.shortcuts-modal-header h4 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.shortcuts-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    color: #6c757d;
+}
+
+.shortcuts-modal-close:hover {
+    color: #000;
+}
+
+.shortcuts-modal-body {
+    padding: 1.5rem;
+}
+
+.shortcuts-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.shortcuts-table td {
+    padding: 0.5rem 0;
+}
+
+.shortcuts-table td:first-child {
+    width: 80px;
+    text-align: center;
+}
+
+.shortcuts-table kbd {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.875rem;
+    font-family: monospace;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.shortcuts-toggle {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.shortcuts-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    margin: 0;
+}
+
+.shortcuts-toggle input[type="checkbox"] {
+    width: 1.1rem;
+    height: 1.1rem;
+}

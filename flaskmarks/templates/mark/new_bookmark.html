@@ -1,45 +1,9 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 {% block content %}
-    <div class="container-fluid p-0">
-        <div class="delicious-layout">
-            <!-- Left Sidebar -->
-            <div class="sidebar-left sidebar">
-                <div class="user-info">
-                    <h2>{{ config['SITE_TITLE'] }}</h2>
-                    <div class="user-tabs">
-                        <a href="{{ url_for('marks.allmarks') }}">Bookmarks</a> |
-                        <a href="{{ url_for('tags.cloud') }}">Tags</a>
-                    </div>
-                </div>
-                <div class="filter-section">
-                    <h4>Add New</h4>
-                    <a href="{{ url_for('marks.new_mark', type='bookmark') }}" class="fw-bold">+ Bookmark</a>
-                    <a href="{{ url_for('marks.new_mark', type='feed') }}">+ Feed</a>
-                    <a href="{{ url_for('marks.new_mark', type='youtube') }}">+ YouTube</a>
-                </div>
-            </div>
-
-            <!-- Main Content -->
-            <div class="main-content">
-                <div class="content-header">
-                    <span>{{ title }}</span>
-                </div>
-                <div class="p-3">
-                    {% include "flash.html" %}
-                    {{ wtf.quick_form(form, button_map={'submit_button': 'primary'}) }}
-                </div>
-            </div>
-
-            <!-- Right Sidebar -->
-            <div class="sidebar-right tags-sidebar">
-                <h3>Tips</h3>
-                <div class="tag-list">
-                    <p style="font-size: 11px; color: var(--text-secondary);">
-                        Add a URL, title, and optional description. Use tags separated by spaces to organize your bookmarks.
-                    </p>
-                </div>
-            </div>
-        </div>
+    <div class="container" role="main">
+        {% include "flash.html" %}
+        <h2>{{ title }}</h2>
+        {{ wtf.quick_form(form,  button_map={'submit_button': 'primary'}) }}
     </div>
 {% endblock %}

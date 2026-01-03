@@ -34,6 +34,7 @@ from typing import List
 from ..core.setup import app, db
 from ..core.error import is_safe_url
 from ..core.marks_import_thread import MarksImportThread
+from ..core.theme_utils import render_themed_template
 
 from ..forms import (
     LoginForm,
@@ -139,7 +140,7 @@ def webroot():
 @login_required
 def allmarks(page=1):
     u = g.user
-    return render_template('mark/index.html',
+    return render_themed_template('mark/index.html',
                            title='Marks - page %d' % page,
                            header='',
                            marks=u.marks(page))
@@ -150,7 +151,7 @@ def allmarks(page=1):
 @login_required
 def recently_clicked(page=1):
     u = g.user
-    return render_template('mark/index.html',
+    return render_themed_template('mark/index.html',
                            title='Marks - page %d' % page,
                            header='',
                            marks=u.recent_marks(page, 'clicked'))
@@ -161,7 +162,7 @@ def recently_clicked(page=1):
 @login_required
 def recently_added(page=1):
     u = g.user
-    return render_template('mark/index.html',
+    return render_themed_template('mark/index.html',
                            title='Marks - page %d' % page,
                            header='',
                            marks=u.recent_marks(page, 'added'))
@@ -171,7 +172,7 @@ def recently_added(page=1):
 @marks.route('/marks/search/tag/<slug>/<int:page>')
 @login_required
 def mark_q_tag(slug, page=1):
-    return render_template('mark/index.html',
+    return render_themed_template('mark/index.html',
                            title='Marks with tag: %s' % (slug),
                            header='Marks with tag: %s' % (slug),
                            marks=g.user.q_marks_by_tag(slug, page))
@@ -203,7 +204,7 @@ def search_string(page=1):
         .paginate(page=page, per_page=5, error_out=False)
 
 
-    return render_template('mark/index.html',
+    return render_themed_template('mark/index.html',
                            title='Search results for: %s' % (q),
                            header="Search results for: '%s'" % (q),
                            marks=results)
@@ -219,7 +220,7 @@ def search(query):
 @marks.route('/mark/new', methods=['GET'])
 @login_required
 def new_mark_selector():
-    return render_template('mark/new_selector.html',
+    return render_themed_template('mark/new_selector.html',
                            title='Select new mark type')
 
 
@@ -259,7 +260,7 @@ def new_mark(type):
     """
     GET
     """
-    return render_template('mark/new_%s.html' % (type),
+    return render_themed_template('mark/new_%s.html' % (type),
                            title='New %s' % (type),
                            form=form)
 
@@ -281,7 +282,7 @@ def view_mark(id, type):
     db.session.add(m)
     db.session.commit()
 
-    return render_template('mark/view_%s.html' % (type),
+    return render_themed_template('mark/view_%s.html' % (type),
                            mark=m,
                            data=data,
                            title=m.title,
@@ -315,7 +316,7 @@ def edit_mark(id):
     GET
     """
     form.referrer.data = request.referrer
-    return render_template('mark/edit.html',
+    return render_themed_template('mark/edit.html',
                            mark=m,
                            title='Edit mark - %s' % m.title,
                            form=form
@@ -328,7 +329,7 @@ def view_html_mark(id):
     m = g.user.get_mark_by_id(id)
     if not m:
         abort(403)
-    return render_template('mark/view_html.html',
+    return render_themed_template('mark/view_html.html',
                            mark=m,
                            title='View html for mark - %s' % m.title,
                            )

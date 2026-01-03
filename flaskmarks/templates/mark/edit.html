@@ -1,53 +1,15 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 {% block content %}
-    <div class="container-fluid p-0">
-        <div class="delicious-layout">
-            <!-- Left Sidebar -->
-            <div class="sidebar-left sidebar">
-                <div class="user-info">
-                    <h2>{{ config['SITE_TITLE'] }}</h2>
-                    <div class="user-tabs">
-                        <a href="{{ url_for('marks.allmarks') }}">Bookmarks</a> |
-                        <a href="{{ url_for('tags.cloud') }}">Tags</a>
-                    </div>
-                </div>
-                <div class="filter-section">
-                    <h4>Actions</h4>
-                    <a href="{{ url_for('marks.new_mark', url=mark.url, type=mark.type) }}">Clone to new</a>
-                    <a href="{{ url_for('marks.delete_mark', id=mark.id) }}" style="color: #dc3545;">Delete this mark</a>
-                </div>
-            </div>
-            
-            <!-- Main Content -->
-            <div class="main-content">
-                <div class="content-header">
-                    <span>Edit {{ mark.type }} - {{ mark.title|truncate(50) }}</span>
-                </div>
-                <div class="p-3">
-                    {% include "flash.html" %}
-                    {{ wtf.quick_form(form, button_map={'submit_button': 'primary'}) }}
-                </div>
-            </div>
-            
-            <!-- Right Sidebar -->
-            <div class="sidebar-right tags-sidebar">
-                <h3>Bookmark Info</h3>
-                <div class="tag-list">
-                    <div class="tag-item">
-                        <span>Created:</span>
-                        <span class="tag-count">{{ mark.created|date }}</span>
-                    </div>
-                    <div class="tag-item">
-                        <span>Clicks:</span>
-                        <span class="tag-count">{{ mark.clicks }}</span>
-                    </div>
-                    <div class="tag-item">
-                        <span>Type:</span>
-                        <span class="tag-count">{{ mark.type }}</span>
-                    </div>
-                </div>
+    <div class="container" role="main">
+        {% include "flash.html" %}
+        <h2>Edit {{ mark.type }} - {{ mark.title|truncate(50) }}</h2>
+        <div class="btn-toolbar mb-3" role="toolbar">
+            <div class="btn-group btn-group-sm">
+                <a href="{{ url_for('marks.new_mark', url=mark.url, type=mark.type) }}" class="btn btn-info">Clone to new</a>
+                <a href="{{ url_for('marks.delete_mark', id=mark.id) }}" class="btn btn-danger">Delete</a>
             </div>
         </div>
+        {{ wtf.quick_form(form,  button_map={'submit_button': 'primary'}) }}
     </div>
 {% endblock %}

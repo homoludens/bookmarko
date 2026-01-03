@@ -1,55 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-    <div class="container-fluid p-0">
-        <div class="delicious-layout">
-            <!-- Left Sidebar -->
-            <div class="sidebar-left sidebar">
-                <div class="user-info">
-                    <h2>{{ config['SITE_TITLE'] }}</h2>
-                    <div class="user-tabs">
-                        <a href="{{ url_for('marks.allmarks') }}">Bookmarks</a> |
-                        <a href="{{ url_for('tags.cloud') }}" class="fw-bold">Tags</a>
-                    </div>
-                </div>
-                <div class="filter-section">
-                    <h4>View Tags</h4>
-                    <a href="{{ url_for('tags.cloud') }}">Tag Cloud</a>
-                    <a href="{{ url_for('tags.by_clicks') }}">By Popularity</a>
-                </div>
-            </div>
-            
-            <!-- Main Content -->
-            <div class="main-content">
-                <div class="content-header">
-                    <span>Tag Cloud</span>
-                </div>
-                <div class="tag-cloud p-3">
-                    {% include "flash.html" %}
-                    {% if tags %}
-                        {% for t in tags %}
-                            <a href="{{ url_for('marks.mark_q_tag', slug=t.title) }}"><span class="badge bg-primary">{{ t.title }}</span></a>
-                        {% endfor %}
-                    {% else %}
-                        <p>No tags found</p>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <!-- Right Sidebar (empty for tags page) -->
-            <div class="sidebar-right tags-sidebar">
-                <h3>Quick Links</h3>
-                <div class="tag-list">
-                    <div class="tag-item">
-                        <a href="{{ url_for('marks.allmarks') }}">All Bookmarks</a>
-                    </div>
-                    <div class="tag-item">
-                        <a href="{{ url_for('marks.recently_added') }}">Recently Added</a>
-                    </div>
-                    <div class="tag-item">
-                        <a href="{{ url_for('marks.recently_clicked') }}">Recently Clicked</a>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="container" role="main">
+        {% include "flash.html" %}
+        {% if tags %}
+            {% for t in tags %}
+                <a href="{{ url_for('marks.mark_q_tag', slug=t.title) }}"><span class="badge bg-primary">{{ t.title }}</span></a>
+            {% endfor %}
+        {% else %}
+            <h3>No tags</h3>
+        {% endif %}
     </div>
 {% endblock %}

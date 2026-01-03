@@ -3,10 +3,8 @@
 
 {% block styles %}
     {{ super() }}
-    {# Load theme-specific CSS based on user preference #}
-    {% set user_theme = g.user.theme if g.user.is_authenticated and g.user.theme else 'default' %}
-    <link rel="stylesheet" href="{{url_for('static', filename='css/themes/' ~ user_theme ~ '.css')}}" />
-    <link rel="stylesheet" href="{{url_for('static', filename='css/themes/' ~ user_theme ~ '-dark.css')}}" />
+    <link rel="stylesheet" href="{{url_for('static', filename='css/themes/delicious.css')}}" />
+    <link rel="stylesheet" href="{{url_for('static', filename='css/themes/delicious-dark.css')}}" />
 {% endblock %}
 
 {% block scripts %}
@@ -16,7 +14,7 @@
     <script src="{{url_for('static', filename='js/shortcuts.js')}}"></script>
 {% endblock %}
 
-{% block navbar %}{% include "navbar.html" %}{% endblock %}
+{% block navbar %}{% include "themes/delicious/navbar.html" %}{% endblock %}
 
 {% block content %}{% endblock %}
 

@@ -1,136 +1,127 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 {% block content %}
-    <div class="container-fluid p-0">
-        <div class="delicious-layout">
-            <!-- Left Sidebar -->
-            <div class="sidebar-left sidebar">
-                <div class="user-info">
-                    <h2>{{ g.user.username }}</h2>
-                    <div class="user-tabs">
-                        <a href="{{ url_for('marks.allmarks') }}">Bookmarks</a> |
-                        <a href="{{ url_for('tags.cloud') }}">Tags</a> |
-                        <a href="{{ url_for('profile.userprofile') }}" class="fw-bold">Profile</a>
-                    </div>
-                </div>
-                <div class="filter-section">
-                    <h4>Actions</h4>
-                    <a href="{{ url_for('marks.import_marks') }}">Import marks</a>
-                    <a href="{{ url_for('marks.export_marks') }}">Export marks</a>
-                    <a href="{{ url_for('auth.logout') }}">Logout</a>
-                </div>
+    <div class="container" role="main">
+        {% include "flash.html" %}
+        <h2>Profile - {{ g.user.username }} ({{ g.user.email }})</h2>
+        <ul class="infolist list-group">
+            <li class="list-group-item"><strong>Total marks:</strong> {{ bc+fc+yc }} (Bookmarks: {{ bc }}, Feeds: {{ fc }}, Youtubes: {{ yc }})</li>
+            {% if lcm %}
+            <li class="list-group-item"><strong>Last created mark:</strong> {{ lcm.created }}</li>
+            {% endif %}
+            <li class="list-group-item"><strong>Last logon:</strong> {{ g.user.last_logged }}</li>
+        </ul>
+
+        <hr>
+
+        <h3>API Access</h3>
+        <p class="text-muted">Use this token to access the REST API from external applications.</p>
+        
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4 class="panel-title">API Token</h4>
             </div>
-            
-            <!-- Main Content -->
-            <div class="main-content">
-                <div class="content-header">
-                    <span>Profile - {{ g.user.username }}</span>
+            <div class="panel-body">
+                <p><small class="text-muted">Valid for {{ token_validity_hours }} hours. Refresh this page to generate a new token.</small></p>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="api-token" value="{{ api_token }}" readonly>
+                    <span class="input-group-btn">
+                        <button class="btn btn-default" type="button" onclick="copyToClipboard('api-token')" title="Copy to clipboard">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                    </span>
                 </div>
-                <div class="p-3">
-                    {% include "flash.html" %}
-                    
-                    <div class="mb-4">
-                        <h4 style="font-size: 13px; font-weight: bold; margin-bottom: 10px;">Statistics</h4>
-                        <div class="tag-list">
-                            <div class="tag-item">
-                                <span>Total marks:</span>
-                                <span class="tag-count">{{ bc+fc+yc }}</span>
-                            </div>
-                            <div class="tag-item">
-                                <span>Bookmarks:</span>
-                                <span class="tag-count">{{ bc }}</span>
-                            </div>
-                            <div class="tag-item">
-                                <span>Feeds:</span>
-                                <span class="tag-count">{{ fc }}</span>
-                            </div>
-                            <div class="tag-item">
-                                <span>YouTube:</span>
-                                <span class="tag-count">{{ yc }}</span>
-                            </div>
-                            {% if lcm %}
-                            <div class="tag-item">
-                                <span>Last created:</span>
-                                <span class="tag-count">{{ lcm.created }}</span>
-                            </div>
-                            {% endif %}
-                            <div class="tag-item">
-                                <span>Last login:</span>
-                                <span class="tag-count">{{ g.user.last_logged }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr>
-
-                    <div class="mb-4">
-                        <h4 style="font-size: 13px; font-weight: bold; margin-bottom: 10px;">API Access</h4>
-                        <p style="font-size: 11px; color: var(--text-secondary);">Use this token to access the REST API from external applications.</p>
-                        
-                        <div class="mb-3">
-                            <label style="font-size: 11px;"><strong>API Token</strong> (valid for {{ token_validity_hours }} hours)</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="api-token" value="{{ api_token }}" readonly>
-                                <button class="btn btn-primary" type="button" onclick="copyToClipboard('api-token')">
-                                    <i class="bi bi-clipboard"></i> Copy
-                                </button>
-                            </div>
-                            <p style="font-size: 10px; color: var(--text-muted); margin-top: 5px;">
-                                Usage: <code>Authorization: Bearer &lt;token&gt;</code>
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <h4 style="font-size: 13px; font-weight: bold; margin-bottom: 10px;">Bookmarklet</h4>
-                        <p style="font-size: 11px;">Drag this button to your bookmarks bar:</p>
-                        <p>
-                            <a class="btn btn-primary btn-sm" href="{{ bookmarklet }}" onclick="alert('Drag this button to your bookmarks bar!'); return false;">
-                                <i class="bi bi-bookmark-plus"></i> Save to {{ config['SITE_TITLE'] }}
-                            </a>
-                        </p>
-                        <div class="input-group mt-2">
-                            <input type="text" class="form-control" id="bookmarklet-code" value="{{ bookmarklet }}" readonly>
-                            <button class="btn btn-primary" type="button" onclick="copyToClipboard('bookmarklet-code')">
-                                <i class="bi bi-clipboard"></i> Copy
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <h4 style="font-size: 13px; font-weight: bold; margin-bottom: 10px;">Browser Extension</h4>
-                        <p style="font-size: 11px;">Install the browser extension to quickly save bookmarks.</p>
-                        <a href="{{ url_for('profile.download_firefox_extension') }}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-download"></i> Download for Firefox
-                        </a>
-                        <p style="font-size: 10px; color: var(--text-muted); margin-top: 10px;">
-                            Note: Requires manual installation via <code>about:debugging</code>
-                        </p>
-                    </div>
-
-                    <hr>
-
-                    <div class="mb-4">
-                        <h4 style="font-size: 13px; font-weight: bold; margin-bottom: 10px;">Profile Settings</h4>
-                        {{ wtf.quick_form(form, button_map={'submit_button': 'primary'}) }}
-                    </div>
-                </div>
+                <p class="help-block" style="margin-top: 10px;">
+                    <strong>Usage:</strong> Include in HTTP header: <code>Authorization: Bearer &lt;token&gt;</code>
+                </p>
             </div>
-            
-            <!-- Right Sidebar -->
-            <div class="sidebar-right tags-sidebar">
-                <h3>API Endpoints</h3>
-                <div class="tag-list" style="font-size: 10px;">
-                    <p><strong>Base:</strong> <code>{{ server_url }}/api/v1</code></p>
-                    <div class="tag-item"><code>POST /quickadd</code></div>
-                    <div class="tag-item"><code>GET /marks</code></div>
-                    <div class="tag-item"><code>POST /marks</code></div>
-                    <div class="tag-item"><code>GET /marks/search</code></div>
-                    <div class="tag-item"><code>GET /tags</code></div>
-                    <div class="tag-item"><code>POST /auth/refresh</code></div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4 class="panel-title">Bookmarklet</h4>
+            </div>
+            <div class="panel-body">
+                <p>Drag this button to your bookmarks bar to save pages with one click:</p>
+                <p>
+                    <a class="btn btn-primary" href="{{ bookmarklet }}" onclick="alert('Drag this button to your bookmarks bar!'); return false;">
+                        <i class="bi bi-bookmark-plus"></i> Save to Flaskmarks
+                    </a>
+                </p>
+                <hr>
+                <p><strong>Or copy the bookmarklet code:</strong></p>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="bookmarklet-code" value="{{ bookmarklet }}" readonly>
+                    <span class="input-group-btn">
+                        <button class="btn btn-default" type="button" onclick="copyToClipboard('bookmarklet-code')" title="Copy to clipboard">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                    </span>
+                </div>
+                <p class="help-block" style="margin-top: 10px;">
+                    <strong>Manual setup:</strong> Create a new bookmark, then paste this code as the URL.
+                </p>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4 class="panel-title">Browser Extension</h4>
+            </div>
+            <div class="panel-body">
+                <p>Install the browser extension to quickly save bookmarks from any page.</p>
+                
+                <div class="d-flex gap-2 mb-3">
+                    <a href="{{ url_for('profile.download_firefox_extension') }}" class="btn btn-primary">
+                        <i class="bi bi-download"></i> Download for Firefox
+                    </a>
+                </div>
+                
+                <div class="alert alert-info mb-0">
+                    <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Installation Instructions</h5>
+                    <p class="mb-2">Since this is a self-hosted extension, Firefox requires manual installation:</p>
+                    <ol class="mb-0">
+                        <li>Download the extension file (.xpi)</li>
+                        <li>Open Firefox and go to <code>about:debugging#/runtime/this-firefox</code></li>
+                        <li>Click "Load Temporary Add-on..."</li>
+                        <li>Select the downloaded .xpi file</li>
+                    </ol>
+                    <hr>
+                    <p class="mb-0"><small><strong>Note:</strong> Temporary add-ons are removed when Firefox restarts. For permanent installation, use Firefox Developer Edition or ESR with <code>xpinstall.signatures.required</code> set to <code>false</code> in <code>about:config</code>.</small></p>
                 </div>
             </div>
         </div>
+
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h4 class="panel-title">API Endpoints</h4>
+            </div>
+            <div class="panel-body">
+                <p><strong>Base URL:</strong> <code>{{ server_url }}/api/v1</code></p>
+                <table class="table table-condensed">
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>POST /quickadd</code></td><td>Quick-add bookmark (for extensions)</td></tr>
+                        <tr><td><code>GET /marks</code></td><td>List all bookmarks</td></tr>
+                        <tr><td><code>POST /marks</code></td><td>Create bookmark</td></tr>
+                        <tr><td><code>GET /marks/search?q=</code></td><td>Search bookmarks</td></tr>
+                        <tr><td><code>GET /tags</code></td><td>List all tags</td></tr>
+                        <tr><td><code>POST /auth/refresh</code></td><td>Refresh token</td></tr>
+                    </tbody>
+                </table>
+                <p><a href="https://github.com/your-repo/flaskmarks#rest-api" target="_blank">View full API documentation</a></p>
+            </div>
+        </div>
+
+        <hr>
+
+        <h3>Profile Settings</h3>
+        {{ wtf.quick_form(form,  button_map={'submit_button': 'primary'}) }}
     </div>
 
     <script>

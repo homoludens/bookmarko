@@ -6,6 +6,8 @@ from __future__ import annotations
 from flask import Blueprint, g, render_template
 from flask_login import login_required
 
+from ..core.theme_utils import render_themed_template
+
 tags = Blueprint('tags', __name__)
 
 
@@ -13,7 +15,7 @@ tags = Blueprint('tags', __name__)
 @login_required
 def cloud():
     """Display tag cloud."""
-    return render_template(
+    return render_themed_template(
         'tag/cloud.html',
         title='Tag cloud',
         header='',
@@ -27,7 +29,7 @@ def cloud():
 def by_clicks(page: int = 1):
     """Display tags sorted by click count."""
     u = g.user
-    return render_template(
+    return render_themed_template(
         'tag/index.html',
         title=f'Tags - page {page}',
         header='',

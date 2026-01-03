@@ -1,0 +1,77 @@
+<div class="bookmarks-list">
+    {% for mark in marks %}
+    <div class="bookmark-item">
+        {% if mark.created is defined and mark.created %}
+        <div class="bookmark-date">{{ mark.created|date }}</div>
+        {% endif %}
+        <div class="bookmark-title">
+            {% if mark.type is defined and mark.type not in mark.valid_feed_types %}
+            <a class="clickIncrement" href="{{ url_for('marks.mark_redirect', id=mark.id) }}" target="_blank" data-id="{{ mark.id }}" data-url="/mark/inc" rel="noreferrer">
+                {{ mark.title|truncate(82) }}
+            </a>
+            {% elif mark.type is defined and mark.type in mark.valid_feed_types %}
+            <a class="clickIncrement" href="{{ url_for('marks.view_mark', id=mark.id, type=mark.type) }}" data-id="{{ mark.id }}" data-url="/mark/inc">
+                {% if mark.type == 'youtube' %}
+                    <i class="bi bi-film"></i>
+                {% else %}
+                    <i class="bi bi-rss"></i>
+                {% endif %}
+                {{ mark.title|truncate(82) }}
+            </a>
+            {% else %}
+            <a class="clickIncrement" href="{{ url_for('marks.mark_redirect', id=mark.id) }}" target="_blank" data-id="{{ mark.id }}" data-url="/mark/inc" rel="noreferrer">
+                {{ mark.title|truncate(82) }}
+            </a>
+            {% endif %}
+            {% if mark.clicks is defined and mark.clicks > 0 %}
+            <span class="bookmark-count">{{ mark.clicks }}</span>
+            {% endif %}
+        </div>
+        <div class="bookmark-actions">
+            <a href="{{ url_for('marks.edit_mark', id=mark.id) }}">edit</a> | 
+            <a href="{{ url_for('marks.view_html_mark', id=mark.id) }}">view html</a>
+        </div>
+        {% if mark.description %}
+        <div class="bookmark-description">{{ mark.description }}</div>
+        {% endif %}
+        {% if mark.tags is defined and mark.tags %}
+        <div class="bookmark-meta">
+            <span class="bookmark-tags">
+                {% for m in mark.tags %}
+                <a href="{{ url_for('marks.mark_q_tag', slug=m.title) }}">{{ m.title }}</a>
+                {% endfor %}
+            </span>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{% macro render_pagination(pagination, endpoint) %}
+  <div class="page-items">
+    {{ pagination.first }} - {{ pagination.last }} of {{ pagination.total }}
+  </div>
+  <nav aria-label="Page navigation">
+    <ul class="pagination">
+    {% if pagination.has_prev %}
+        <li class="page-item"><a class="page-link" href="{{ url_for(endpoint, slug=request.view_args.get('slug'), page=pagination.prev_num, q=request.args.get('q'), type=request.args.get('type')) }}">Previous</a></li>
+    {% endif %}
+    {% for page in pagination.iter_pages() %}
+      {% if page %}
+        {% if page != pagination.page %}
+          <li class="page-item"><a class="page-link" href="{{ url_for(endpoint, slug=request.view_args.get('slug'), page=page, q=request.args.get('q'), type=request.args.get('type')) }}">{{ page }}</a></li>
+        {% else %}
+          <li class="page-item active" aria-current="page"><a class="page-link" href="#">{{ page }}</a></li>
+        {% endif %}
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">...</span></li>
+      {% endif %}
+    {% endfor %}
+    {% if pagination.has_next %}
+        <li class="page-item"><a class="page-link" href="{{ url_for(endpoint, slug=request.view_args.get('slug'), page=pagination.next_num, q=request.args.get('q'), type=request.args.get('type')) }}">Next</a></li>
+    {% endif %}
+    </ul>
+  </nav>
+{% endmacro %}
+
+{{ render_pagination(marks, request.endpoint) }}

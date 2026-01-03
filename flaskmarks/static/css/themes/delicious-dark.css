@@ -1,0 +1,835 @@
+/* Delicious Theme - CSS Variables and Overrides */
+
+/* Light mode (default) - Delicious-inspired colors */
+:root {
+    --delicious-blue: #3271CB;
+    --delicious-dark-blue: #2858A8;
+    --delicious-light-blue: #E8F0FC;
+    --delicious-border: #D5D5D5;
+    --delicious-text: #333;
+    --delicious-link: #1259C3;
+    --delicious-tag-bg: #F0F0F0;
+    
+    --bg-body: #ffffff;
+    --bg-secondary: #fafafa;
+    --bg-tertiary: #f5f5f5;
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --text-muted: #999999;
+    --border-color: #D5D5D5;
+    --link-color: #1259C3;
+    --link-hover-color: #0d4a9e;
+    --card-bg: #ffffff;
+    --input-bg: #ffffff;
+    --input-border: #D5D5D5;
+    --dropdown-bg: #ffffff;
+    --dropdown-border: rgba(0, 0, 0, 0.15);
+    --shadow-color: rgba(0, 0, 0, 0.05);
+    --header-bg: #3271CB;
+    --header-dark-bg: #2858A8;
+}
+
+/* Dark mode variables - Delicious-inspired dark theme */
+[data-theme="dark"] {
+    --delicious-blue: #4a8ae0;
+    --delicious-dark-blue: #3a6db8;
+    --delicious-light-blue: #1a2a4a;
+    
+    --bg-body: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-tertiary: #0f3460;
+    --text-primary: #eaeaea;
+    --text-secondary: #b8b8b8;
+    --text-muted: #888888;
+    --border-color: #3a3a5c;
+    --link-color: #6ea8fe;
+    --link-hover-color: #9ec5fe;
+    --card-bg: #16213e;
+    --input-bg: #0f3460;
+    --input-border: #3a3a5c;
+    --dropdown-bg: #16213e;
+    --dropdown-border: rgba(255, 255, 255, 0.15);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --header-bg: #2858A8;
+    --header-dark-bg: #1e4a8a;
+}
+
+/* Apply variables to base elements */
+body {
+    background-color: var(--bg-body);
+    color: var(--text-primary);
+    font-family: Verdana, Geneva, sans-serif;
+    font-size: 12px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+a {
+    color: var(--link-color);
+}
+
+a:hover {
+    color: var(--link-hover-color);
+}
+
+/* ============================================
+   DELICIOUS HEADER STYLES
+   ============================================ */
+
+.delicious-header {
+    background: var(--header-bg);
+    color: white;
+    padding: 0;
+    border-bottom: 3px solid var(--header-dark-bg);
+}
+
+.delicious-logo {
+    background: var(--header-dark-bg);
+    padding: 8px 15px;
+    display: inline-flex;
+    align-items: center;
+    font-weight: bold;
+    font-size: 14px;
+    margin-right: 10px;
+    color: white;
+    text-decoration: none;
+}
+
+.delicious-logo:hover {
+    color: white;
+    text-decoration: none;
+}
+
+.delicious-logo img {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    filter: brightness(0) invert(1);
+}
+
+.delicious-nav {
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    flex-grow: 1;
+}
+
+.delicious-nav a {
+    color: white;
+    text-decoration: none;
+    padding: 10px 12px;
+    margin-right: 2px;
+    background: transparent;
+    border-radius: 3px 3px 0 0;
+    font-size: 12px;
+    display: inline-block;
+}
+
+.delicious-nav a:hover,
+.delicious-nav a.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.delicious-nav .dropdown-menu {
+    border-radius: 0 0 3px 3px;
+    margin-top: 0;
+    border-top: none;
+}
+
+.delicious-subnav {
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 15px;
+    font-size: 11px;
+}
+
+.delicious-subnav a {
+    color: var(--link-color);
+    text-decoration: none;
+    margin-right: 15px;
+}
+
+.delicious-subnav a:hover {
+    text-decoration: underline;
+}
+
+/* Header actions (search, theme toggle) */
+.header-actions {
+    display: flex;
+    align-items: center;
+    padding-right: 15px;
+}
+
+.header-actions .btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 11px;
+    padding: 4px 10px;
+}
+
+.header-actions .btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.header-actions .theme-toggle {
+    color: white;
+    padding: 8px;
+}
+
+.header-actions .theme-toggle:hover {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Dark mode header overrides */
+[data-theme="dark"] .delicious-header {
+    background: var(--header-bg);
+    border-bottom-color: var(--header-dark-bg);
+}
+
+[data-theme="dark"] .delicious-logo {
+    background: var(--header-dark-bg);
+}
+
+/* ============================================
+   SIDEBAR STYLES
+   ============================================ */
+
+.sidebar {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    padding: 15px;
+    min-height: calc(100vh - 80px);
+}
+
+.sidebar h3 {
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+}
+
+.user-info {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    padding: 12px;
+    margin-bottom: 20px;
+}
+
+.user-info h2 {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.user-tabs {
+    font-size: 11px;
+    margin-bottom: 8px;
+}
+
+.user-tabs a {
+    color: var(--link-color);
+    text-decoration: none;
+    margin-right: 8px;
+}
+
+.user-tabs a:hover {
+    text-decoration: underline;
+}
+
+.tag-input {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    font-size: 11px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+}
+
+.filter-section {
+    margin-bottom: 20px;
+}
+
+.filter-section h4 {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.filter-section a {
+    display: block;
+    color: var(--link-color);
+    text-decoration: none;
+    padding: 3px 0;
+    font-size: 11px;
+}
+
+.filter-section a:hover {
+    text-decoration: underline;
+}
+
+/* ============================================
+   TAGS SIDEBAR (Right)
+   ============================================ */
+
+.tags-sidebar {
+    padding: 15px;
+    background: var(--bg-body);
+}
+
+.tags-sidebar h3 {
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+}
+
+.tag-list {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    padding: 10px;
+}
+
+.tag-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    font-size: 11px;
+}
+
+.tag-item a {
+    color: var(--link-color);
+    text-decoration: none;
+}
+
+.tag-item a:hover {
+    text-decoration: underline;
+}
+
+.tag-count {
+    color: var(--text-muted);
+    font-size: 10px;
+}
+
+.view-all-tags {
+    display: block;
+    color: var(--link-color);
+    text-decoration: none;
+    margin-top: 10px;
+    font-size: 11px;
+}
+
+.view-all-tags:hover {
+    text-decoration: underline;
+}
+
+/* ============================================
+   BOOKMARK LIST STYLES
+   ============================================ */
+
+.bookmark-item {
+    border-bottom: 1px solid var(--bg-tertiary);
+    padding: 12px 0;
+}
+
+.bookmark-item:last-child {
+    border-bottom: none;
+}
+
+.bookmark-date {
+    color: var(--text-muted);
+    font-size: 10px;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+}
+
+.bookmark-title {
+    font-size: 13px;
+    margin-bottom: 3px;
+}
+
+.bookmark-title a {
+    color: var(--link-color);
+    text-decoration: none;
+    font-weight: normal;
+}
+
+.bookmark-title a:hover {
+    text-decoration: underline;
+}
+
+.bookmark-actions {
+    color: var(--text-muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.bookmark-actions a {
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.bookmark-actions a:hover {
+    color: var(--link-color);
+}
+
+.bookmark-description {
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.5;
+    margin-bottom: 5px;
+}
+
+.bookmark-meta {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.bookmark-tags {
+    display: inline-block;
+}
+
+.bookmark-tags a {
+    color: var(--link-color);
+    text-decoration: none;
+    margin-right: 8px;
+    font-size: 11px;
+}
+
+.bookmark-tags a:hover {
+    text-decoration: underline;
+}
+
+.bookmark-count {
+    display: inline-block;
+    background: var(--header-bg);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+/* ============================================
+   CONTENT HEADER
+   ============================================ */
+
+.content-header {
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px 15px;
+    font-size: 11px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.content-header .search-box {
+    color: var(--text-secondary);
+}
+
+/* ============================================
+   DARK MODE COMPONENT OVERRIDES
+   ============================================ */
+
+/* Dropdown menus */
+[data-theme="dark"] .dropdown-menu {
+    background-color: var(--dropdown-bg);
+    border-color: var(--dropdown-border);
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .dropdown-item:hover,
+[data-theme="dark"] .dropdown-item:focus {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .dropdown-divider {
+    border-color: var(--border-color);
+}
+
+/* Cards */
+[data-theme="dark"] .card {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .card-header {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .card-footer {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+/* List groups */
+[data-theme="dark"] .list-group-item {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .list-group-item:hover {
+    background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .list-group-item-action:hover,
+[data-theme="dark"] .list-group-item-action:focus {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* Forms */
+[data-theme="dark"] .form-control {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-control:focus {
+    background-color: var(--input-bg);
+    border-color: var(--link-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-control::placeholder {
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .form-select {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .input-group-text {
+    background-color: var(--bg-tertiary);
+    border-color: var(--input-border);
+    color: var(--text-primary);
+}
+
+/* Buttons */
+[data-theme="dark"] .btn-outline-secondary {
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .btn-light {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+/* Tables */
+[data-theme="dark"] .table {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .table > :not(caption) > * > * {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: var(--bg-secondary);
+}
+
+[data-theme="dark"] .table-hover > tbody > tr:hover > * {
+    background-color: var(--bg-tertiary);
+}
+
+/* Alerts */
+[data-theme="dark"] .alert {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .alert-info {
+    background-color: rgba(13, 202, 240, 0.15);
+    color: #6edff6;
+}
+
+[data-theme="dark"] .alert-success {
+    background-color: rgba(25, 135, 84, 0.15);
+    color: #75b798;
+}
+
+[data-theme="dark"] .alert-warning {
+    background-color: rgba(255, 193, 7, 0.15);
+    color: #ffda6a;
+}
+
+[data-theme="dark"] .alert-danger {
+    background-color: rgba(220, 53, 69, 0.15);
+    color: #ea868f;
+}
+
+/* Pagination */
+[data-theme="dark"] .page-link {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--link-color);
+}
+
+[data-theme="dark"] .page-link:hover {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--link-hover-color);
+}
+
+[data-theme="dark"] .page-item.active .page-link {
+    background-color: var(--link-color);
+    border-color: var(--link-color);
+}
+
+[data-theme="dark"] .page-item.disabled .page-link {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-muted);
+}
+
+/* Badges */
+[data-theme="dark"] .badge.bg-secondary {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .badge.bg-primary {
+    background-color: var(--header-bg) !important;
+}
+
+/* Modal */
+[data-theme="dark"] .modal-content {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .modal-header {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .modal-footer {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Text utilities */
+[data-theme="dark"] .text-muted {
+    color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .text-secondary {
+    color: var(--text-secondary) !important;
+}
+
+/* Background utilities */
+[data-theme="dark"] .bg-light {
+    background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .bg-white {
+    background-color: var(--card-bg) !important;
+}
+
+/* Border utilities */
+[data-theme="dark"] .border {
+    border-color: var(--border-color) !important;
+}
+
+/* Stats list */
+[data-theme="dark"] .statslist {
+    color: var(--text-secondary);
+}
+
+/* Theme toggle button styling */
+.theme-toggle {
+    background: transparent;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.3s ease;
+}
+
+.theme-toggle:hover {
+    color: var(--text-primary);
+}
+
+.theme-toggle .bi {
+    font-size: 1rem;
+}
+
+/* Hide/show icons based on theme */
+[data-theme="light"] .theme-toggle .bi-moon-fill,
+[data-theme="dark"] .theme-toggle .bi-sun-fill {
+    display: inline-block;
+}
+
+[data-theme="light"] .theme-toggle .bi-sun-fill,
+[data-theme="dark"] .theme-toggle .bi-moon-fill {
+    display: none;
+}
+
+/* Default state (no data-theme set, assumed light) */
+:root:not([data-theme]) .theme-toggle .bi-moon-fill {
+    display: inline-block;
+}
+
+:root:not([data-theme]) .theme-toggle .bi-sun-fill {
+    display: none;
+}
+
+/* Container backgrounds */
+[data-theme="dark"] .container,
+[data-theme="dark"] .container-fluid {
+    background-color: transparent;
+}
+
+/* Code/pre blocks */
+[data-theme="dark"] pre,
+[data-theme="dark"] code {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* Blockquote */
+[data-theme="dark"] blockquote {
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+/* Horizontal rule */
+[data-theme="dark"] hr {
+    border-color: var(--border-color);
+    opacity: 0.5;
+}
+
+/* Keyboard shortcuts modal - dark mode */
+[data-theme="dark"] .shortcuts-modal-content {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .shortcuts-modal-header {
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .shortcuts-modal-close {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .shortcuts-modal-close:hover {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .shortcuts-table kbd {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .shortcuts-toggle {
+    border-top-color: var(--border-color);
+}
+
+/* Keyboard selection - dark mode */
+[data-theme="dark"] .list-group-item.keyboard-selected {
+    outline-color: var(--link-color);
+    background-color: rgba(110, 168, 254, 0.15);
+}
+
+/* ============================================
+   CHAT PAGE - Dark mode
+   ============================================ */
+
+[data-theme="dark"] .chat-messages {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .message-assistant .message-content {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .message-assistant .message-content strong {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .markdown-content code {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .markdown-content pre {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .markdown-content blockquote {
+    border-left-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .source-item {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .source-score {
+    color: var(--text-muted);
+}
+
+/* Dark mode sidebar */
+[data-theme="dark"] .sidebar {
+    background-color: var(--bg-secondary);
+    border-right-color: var(--border-color);
+}
+
+[data-theme="dark"] .user-info {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .tag-list {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .bookmark-item {
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .content-header {
+    background-color: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+}
