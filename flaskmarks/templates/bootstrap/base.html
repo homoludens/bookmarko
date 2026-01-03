@@ -21,6 +21,15 @@
     <!-- Bootstrap Icons -->
     <link href="{{url_for('static', filename='vendor/bootstrap-icons/bootstrap-icons.min.css')}}" rel="stylesheet">
     {%- endblock styles %}
+    
+    <!-- Delicious theme font (Verdana fallback, no external dependency) -->
+    <style>
+      html, body {
+        font-family: Verdana, Geneva, sans-serif;
+        font-size: 12px;
+      }
+    </style>
+    
     <!-- Theme initialization script (in head to prevent flash) -->
     <script>
       (function() {

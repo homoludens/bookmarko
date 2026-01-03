@@ -33,6 +33,7 @@ class User(UserMixin, db.Model):
     last_logged = db.Column(db.DateTime)
     per_page = db.Column(db.SmallInteger, default=50)
     sort_type = db.Column(db.Unicode(255), default='clicks')
+    theme = db.Column(db.Unicode(50), default='default')
 
     marks_rel = db.relationship('Mark', backref='owner', lazy='dynamic')
 

@@ -1,11 +1,44 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 {% block content %}
-    <div class="container" role="main">
-        {% include "flash.html" %}
-        <h2>Import marks</h2>
-        {{ wtf.quick_form(form,  button_map={'submit_button': 'primary'}, enctype='multipart/form-data') }}
+    <div class="container-fluid p-0">
+        <div class="delicious-layout">
+            <!-- Left Sidebar -->
+            <div class="sidebar-left sidebar">
+                <div class="user-info">
+                    <h2>{{ config['SITE_TITLE'] }}</h2>
+                    <div class="user-tabs">
+                        <a href="{{ url_for('marks.allmarks') }}">Bookmarks</a> |
+                        <a href="{{ url_for('tags.cloud') }}">Tags</a>
+                    </div>
+                </div>
+                <div class="filter-section">
+                    <h4>Import/Export</h4>
+                    <a href="{{ url_for('marks.import_marks') }}" class="fw-bold">Import marks</a>
+                    <a href="{{ url_for('marks.export_marks') }}">Export marks</a>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="content-header">
+                    <span>Import Marks</span>
+                </div>
+                <div class="p-3">
+                    {% include "flash.html" %}
+                    {{ wtf.quick_form(form, button_map={'submit_button': 'primary'}, enctype='multipart/form-data') }}
+                </div>
+            </div>
+            
+            <!-- Right Sidebar -->
+            <div class="sidebar-right tags-sidebar">
+                <h3>Supported Formats</h3>
+                <div class="tag-list">
+                    <p style="font-size: 11px; color: var(--text-secondary);">
+                        Import bookmarks from HTML bookmark files exported from browsers like Chrome, Firefox, or other bookmark managers.
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}
-
-

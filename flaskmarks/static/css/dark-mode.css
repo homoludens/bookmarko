@@ -1,26 +1,40 @@
-/* Dark Mode CSS Variables and Overrides */
+/* Delicious Theme - CSS Variables and Overrides */
 
-/* Light mode (default) variables */
+/* Light mode (default) - Delicious-inspired colors */
 :root {
+    --delicious-blue: #3271CB;
+    --delicious-dark-blue: #2858A8;
+    --delicious-light-blue: #E8F0FC;
+    --delicious-border: #D5D5D5;
+    --delicious-text: #333;
+    --delicious-link: #1259C3;
+    --delicious-tag-bg: #F0F0F0;
+    
     --bg-body: #ffffff;
-    --bg-secondary: #f8f9fa;
-    --bg-tertiary: #e9ecef;
-    --text-primary: #212529;
-    --text-secondary: #6c757d;
-    --text-muted: #adb5bd;
-    --border-color: #dee2e6;
-    --link-color: #0d6efd;
-    --link-hover-color: #0a58ca;
+    --bg-secondary: #fafafa;
+    --bg-tertiary: #f5f5f5;
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --text-muted: #999999;
+    --border-color: #D5D5D5;
+    --link-color: #1259C3;
+    --link-hover-color: #0d4a9e;
     --card-bg: #ffffff;
     --input-bg: #ffffff;
-    --input-border: #ced4da;
+    --input-border: #D5D5D5;
     --dropdown-bg: #ffffff;
     --dropdown-border: rgba(0, 0, 0, 0.15);
-    --shadow-color: rgba(0, 0, 0, 0.1);
+    --shadow-color: rgba(0, 0, 0, 0.05);
+    --header-bg: #3271CB;
+    --header-dark-bg: #2858A8;
 }
 
-/* Dark mode variables */
+/* Dark mode variables - Delicious-inspired dark theme */
 [data-theme="dark"] {
+    --delicious-blue: #4a8ae0;
+    --delicious-dark-blue: #3a6db8;
+    --delicious-light-blue: #1a2a4a;
+    
     --bg-body: #1a1a2e;
     --bg-secondary: #16213e;
     --bg-tertiary: #0f3460;
@@ -36,12 +50,16 @@
     --dropdown-bg: #16213e;
     --dropdown-border: rgba(255, 255, 255, 0.15);
     --shadow-color: rgba(0, 0, 0, 0.3);
+    --header-bg: #2858A8;
+    --header-dark-bg: #1e4a8a;
 }
 
 /* Apply variables to base elements */
 body {
     background-color: var(--bg-body);
     color: var(--text-primary);
+    font-family: Verdana, Geneva, sans-serif;
+    font-size: 12px;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -53,36 +71,375 @@ a:hover {
     color: var(--link-hover-color);
 }
 
-/* Dark mode navbar overrides */
-[data-theme="dark"] .navbar {
-    background-color: var(--bg-secondary) !important;
-    border-bottom: 1px solid var(--border-color) !important;
+/* ============================================
+   DELICIOUS HEADER STYLES
+   ============================================ */
+
+.delicious-header {
+    background: var(--header-bg);
+    color: white;
+    padding: 0;
+    border-bottom: 3px solid var(--header-dark-bg);
 }
 
-[data-theme="dark"] .navbar .navbar-nav .nav-link {
+.delicious-logo {
+    background: var(--header-dark-bg);
+    padding: 8px 15px;
+    display: inline-flex;
+    align-items: center;
+    font-weight: bold;
+    font-size: 14px;
+    margin-right: 10px;
+    color: white;
+    text-decoration: none;
+}
+
+.delicious-logo:hover {
+    color: white;
+    text-decoration: none;
+}
+
+.delicious-logo img {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    filter: brightness(0) invert(1);
+}
+
+.delicious-nav {
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    flex-grow: 1;
+}
+
+.delicious-nav a {
+    color: white;
+    text-decoration: none;
+    padding: 10px 12px;
+    margin-right: 2px;
+    background: transparent;
+    border-radius: 3px 3px 0 0;
+    font-size: 12px;
+    display: inline-block;
+}
+
+.delicious-nav a:hover,
+.delicious-nav a.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.delicious-nav .dropdown-menu {
+    border-radius: 0 0 3px 3px;
+    margin-top: 0;
+    border-top: none;
+}
+
+.delicious-subnav {
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 15px;
+    font-size: 11px;
+}
+
+.delicious-subnav a {
+    color: var(--link-color);
+    text-decoration: none;
+    margin-right: 15px;
+}
+
+.delicious-subnav a:hover {
+    text-decoration: underline;
+}
+
+/* Header actions (search, theme toggle) */
+.header-actions {
+    display: flex;
+    align-items: center;
+    padding-right: 15px;
+}
+
+.header-actions .btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 11px;
+    padding: 4px 10px;
+}
+
+.header-actions .btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.header-actions .theme-toggle {
+    color: white;
+    padding: 8px;
+}
+
+.header-actions .theme-toggle:hover {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Dark mode header overrides */
+[data-theme="dark"] .delicious-header {
+    background: var(--header-bg);
+    border-bottom-color: var(--header-dark-bg);
+}
+
+[data-theme="dark"] .delicious-logo {
+    background: var(--header-dark-bg);
+}
+
+/* ============================================
+   SIDEBAR STYLES
+   ============================================ */
+
+.sidebar {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    padding: 15px;
+    min-height: calc(100vh - 80px);
+}
+
+.sidebar h3 {
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+}
+
+.user-info {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    padding: 12px;
+    margin-bottom: 20px;
+}
+
+.user-info h2 {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.user-tabs {
+    font-size: 11px;
+    margin-bottom: 8px;
+}
+
+.user-tabs a {
+    color: var(--link-color);
+    text-decoration: none;
+    margin-right: 8px;
+}
+
+.user-tabs a:hover {
+    text-decoration: underline;
+}
+
+.tag-input {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    font-size: 11px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+}
+
+.filter-section {
+    margin-bottom: 20px;
+}
+
+.filter-section h4 {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.filter-section a {
+    display: block;
+    color: var(--link-color);
+    text-decoration: none;
+    padding: 3px 0;
+    font-size: 11px;
+}
+
+.filter-section a:hover {
+    text-decoration: underline;
+}
+
+/* ============================================
+   TAGS SIDEBAR (Right)
+   ============================================ */
+
+.tags-sidebar {
+    padding: 15px;
+    background: var(--bg-body);
+}
+
+.tags-sidebar h3 {
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+}
+
+.tag-list {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    padding: 10px;
+}
+
+.tag-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    font-size: 11px;
+}
+
+.tag-item a {
+    color: var(--link-color);
+    text-decoration: none;
+}
+
+.tag-item a:hover {
+    text-decoration: underline;
+}
+
+.tag-count {
+    color: var(--text-muted);
+    font-size: 10px;
+}
+
+.view-all-tags {
+    display: block;
+    color: var(--link-color);
+    text-decoration: none;
+    margin-top: 10px;
+    font-size: 11px;
+}
+
+.view-all-tags:hover {
+    text-decoration: underline;
+}
+
+/* ============================================
+   BOOKMARK LIST STYLES
+   ============================================ */
+
+.bookmark-item {
+    border-bottom: 1px solid var(--bg-tertiary);
+    padding: 12px 0;
+}
+
+.bookmark-item:last-child {
+    border-bottom: none;
+}
+
+.bookmark-date {
+    color: var(--text-muted);
+    font-size: 10px;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+}
+
+.bookmark-title {
+    font-size: 13px;
+    margin-bottom: 3px;
+}
+
+.bookmark-title a {
+    color: var(--link-color);
+    text-decoration: none;
+    font-weight: normal;
+}
+
+.bookmark-title a:hover {
+    text-decoration: underline;
+}
+
+.bookmark-actions {
+    color: var(--text-muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.bookmark-actions a {
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.bookmark-actions a:hover {
+    color: var(--link-color);
+}
+
+.bookmark-description {
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.5;
+    margin-bottom: 5px;
+}
+
+.bookmark-meta {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.bookmark-tags {
+    display: inline-block;
+}
+
+.bookmark-tags a {
+    color: var(--link-color);
+    text-decoration: none;
+    margin-right: 8px;
+    font-size: 11px;
+}
+
+.bookmark-tags a:hover {
+    text-decoration: underline;
+}
+
+.bookmark-count {
+    display: inline-block;
+    background: var(--header-bg);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+/* ============================================
+   CONTENT HEADER
+   ============================================ */
+
+.content-header {
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px 15px;
+    font-size: 11px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.content-header .search-box {
     color: var(--text-secondary);
 }
 
-[data-theme="dark"] .navbar .navbar-nav .nav-link:hover,
-[data-theme="dark"] .navbar .navbar-nav .nav-link:focus {
-    color: var(--text-primary);
-}
-
-[data-theme="dark"] .navbar .navbar-nav .nav-link.active {
-    color: var(--text-primary);
-}
-
-[data-theme="dark"] .navbar-brand {
-    color: var(--text-primary) !important;
-}
-
-[data-theme="dark"] .navbar-toggler {
-    border-color: var(--border-color);
-}
-
-[data-theme="dark"] .navbar-toggler-icon {
-    filter: invert(1);
-}
+/* ============================================
+   DARK MODE COMPONENT OVERRIDES
+   ============================================ */
 
 /* Dropdown menus */
 [data-theme="dark"] .dropdown-menu {
@@ -260,6 +617,10 @@ a:hover {
     color: var(--text-primary);
 }
 
+[data-theme="dark"] .badge.bg-primary {
+    background-color: var(--header-bg) !important;
+}
+
 /* Modal */
 [data-theme="dark"] .modal-content {
     background-color: var(--card-bg);
@@ -302,7 +663,7 @@ a:hover {
     border-color: var(--border-color) !important;
 }
 
-/* Stats list (from mystyles.css) */
+/* Stats list */
 [data-theme="dark"] .statslist {
     color: var(--text-secondary);
 }
@@ -325,7 +686,7 @@ a:hover {
 }
 
 .theme-toggle .bi {
-    font-size: 1.25rem;
+    font-size: 1rem;
 }
 
 /* Hide/show icons based on theme */
@@ -446,4 +807,29 @@ a:hover {
 
 [data-theme="dark"] .source-score {
     color: var(--text-muted);
+}
+
+/* Dark mode sidebar */
+[data-theme="dark"] .sidebar {
+    background-color: var(--bg-secondary);
+    border-right-color: var(--border-color);
+}
+
+[data-theme="dark"] .user-info {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .tag-list {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .bookmark-item {
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .content-header {
+    background-color: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
 }

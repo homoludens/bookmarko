@@ -1,4 +1,4 @@
-<form class="d-flex" role="search" action="{{ url_for('marks.search_string')}}" method="GET">
-    <input class="form-control me-2" type="search" placeholder="Search" name="q" value="{{ request.args.get('q', '') }}" aria-label="Search">
-    <button class="btn btn-outline-light" type="submit">Search</button>
+<form class="search-form d-inline-flex ms-auto" role="search" action="{{ url_for('marks.search_string')}}" method="GET">
+    <input class="form-control" type="search" placeholder="Search bookmarks..." name="q" value="{{ request.args.get('q', '') }}" aria-label="Search">
+    <button class="btn btn-primary" type="submit">Search</button>
 </form>

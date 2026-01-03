@@ -1,9 +1,43 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 {% block content %}
-    <div class="container" role="main">
-        {% include "flash.html" %}
-        <h2>Login</h2>
-        {{ wtf.quick_form(form,  button_map={'submit_button': 'primary'}) }}
+    <div class="container-fluid p-0">
+        <div class="delicious-layout">
+            <!-- Left Sidebar -->
+            <div class="sidebar-left sidebar">
+                <div class="user-info">
+                    <h2>{{ config['SITE_TITLE'] }}</h2>
+                    <p style="font-size: 11px; color: var(--text-secondary);">
+                        Welcome to your bookmark manager
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="content-header">
+                    <span>Login</span>
+                </div>
+                <div class="p-3">
+                    {% include "flash.html" %}
+                    {{ wtf.quick_form(form, button_map={'submit_button': 'primary'}) }}
+                    {% if config['CAN_REGISTER'] %}
+                    <p class="mt-3" style="font-size: 11px;">
+                        Don't have an account? <a href="{{ url_for('profile.register') }}">Register here</a>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Right Sidebar -->
+            <div class="sidebar-right tags-sidebar">
+                <h3>About</h3>
+                <div class="tag-list">
+                    <p style="font-size: 11px; color: var(--text-secondary);">
+                        {{ config['SITE_TITLE'] }} is a bookmark manager inspired by the classic Delicious design.
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}

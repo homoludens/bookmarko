@@ -1,11 +1,57 @@
 {% extends "base.html" %}
 {% block content %}
-    <div class="container" role="main">
-        <h2>Select mark type</h2>
-        <div class="mb-3">
-            <a href="{{ url_for('marks.new_mark', type='bookmark') }}" class="btn btn-primary">Bookmark</a>
-            <a href="{{ url_for('marks.new_mark', type='feed') }}" class="btn btn-primary">Feed</a>
-            <a href="{{ url_for('marks.new_mark', type='youtube') }}" class="btn btn-primary">Youtube</a>
+    <div class="container-fluid p-0">
+        <div class="delicious-layout">
+            <!-- Left Sidebar -->
+            <div class="sidebar-left sidebar">
+                <div class="user-info">
+                    <h2>{{ config['SITE_TITLE'] }}</h2>
+                    <div class="user-tabs">
+                        <a href="{{ url_for('marks.allmarks') }}">Bookmarks</a> |
+                        <a href="{{ url_for('tags.cloud') }}">Tags</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="content-header">
+                    <span>Add New Mark</span>
+                </div>
+                <div class="p-3">
+                    <p style="font-size: 12px; margin-bottom: 15px;">Select the type of mark you want to add:</p>
+                    <div class="filter-section">
+                        <a href="{{ url_for('marks.new_mark', type='bookmark') }}" class="btn btn-primary me-2">
+                            <i class="bi bi-link-45deg"></i> Bookmark
+                        </a>
+                        <a href="{{ url_for('marks.new_mark', type='feed') }}" class="btn btn-primary me-2">
+                            <i class="bi bi-rss"></i> Feed
+                        </a>
+                        <a href="{{ url_for('marks.new_mark', type='youtube') }}" class="btn btn-primary">
+                            <i class="bi bi-film"></i> YouTube
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Sidebar -->
+            <div class="sidebar-right tags-sidebar">
+                <h3>Mark Types</h3>
+                <div class="tag-list">
+                    <div class="mb-2" style="font-size: 11px;">
+                        <strong>Bookmark</strong>
+                        <p class="text-muted mb-2">Save a link to any webpage</p>
+                    </div>
+                    <div class="mb-2" style="font-size: 11px;">
+                        <strong>Feed</strong>
+                        <p class="text-muted mb-2">Subscribe to RSS/Atom feeds</p>
+                    </div>
+                    <div style="font-size: 11px;">
+                        <strong>YouTube</strong>
+                        <p class="text-muted mb-0">Save YouTube videos</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}

@@ -1,11 +1,49 @@
 {% extends "base.html" %}
 {% block content %}
-    <div class="container" role="main">
-        {% include "flash.html" %}
-        {% if 1 == 2 %}
-            <h2>No tags</h2>
-        {% else %}
-            {% include "tag/list.html" %}
-        {% endif %}
+    <div class="container-fluid p-0">
+        <div class="delicious-layout">
+            <!-- Left Sidebar -->
+            <div class="sidebar-left sidebar">
+                <div class="user-info">
+                    <h2>{{ config['SITE_TITLE'] }}</h2>
+                    <div class="user-tabs">
+                        <a href="{{ url_for('marks.allmarks') }}">Bookmarks</a> |
+                        <a href="{{ url_for('tags.cloud') }}" class="fw-bold">Tags</a>
+                    </div>
+                </div>
+                <div class="filter-section">
+                    <h4>View Tags</h4>
+                    <a href="{{ url_for('tags.cloud') }}">Tag Cloud</a>
+                    <a href="{{ url_for('tags.by_clicks') }}">By Popularity</a>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="content-header">
+                    <span>Tags by Popularity</span>
+                </div>
+                <div class="p-3">
+                    {% include "flash.html" %}
+                    {% include "tag/list.html" %}
+                </div>
+            </div>
+            
+            <!-- Right Sidebar -->
+            <div class="sidebar-right tags-sidebar">
+                <h3>Quick Links</h3>
+                <div class="tag-list">
+                    <div class="tag-item">
+                        <a href="{{ url_for('marks.allmarks') }}">All Bookmarks</a>
+                    </div>
+                    <div class="tag-item">
+                        <a href="{{ url_for('marks.recently_added') }}">Recently Added</a>
+                    </div>
+                    <div class="tag-item">
+                        <a href="{{ url_for('marks.recently_clicked') }}">Recently Clicked</a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}

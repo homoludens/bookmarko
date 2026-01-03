@@ -1,11 +1,51 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 {% block content %}
-    <div class="container" role="main">
-        {% include "flash.html" %}
-        <h2>View HTML {{ mark.type }} - {{ mark.title|truncate(50) }}</h2>
-        <div class="full_html">
-            {{mark.full_html|safe}}
+    <div class="container-fluid p-0">
+        <div class="delicious-layout">
+            <!-- Left Sidebar -->
+            <div class="sidebar-left sidebar">
+                <div class="user-info">
+                    <h2>{{ config['SITE_TITLE'] }}</h2>
+                    <div class="user-tabs">
+                        <a href="{{ url_for('marks.allmarks') }}">Bookmarks</a> |
+                        <a href="{{ url_for('tags.cloud') }}">Tags</a>
+                    </div>
+                </div>
+                <div class="filter-section">
+                    <h4>Actions</h4>
+                    <a href="{{ url_for('marks.edit_mark', id=mark.id) }}">Edit this mark</a>
+                    <a href="{{ url_for('marks.allmarks') }}">Back to bookmarks</a>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="content-header">
+                    <span>{{ mark.title|truncate(50) }}</span>
+                </div>
+                <div class="p-3">
+                    {% include "flash.html" %}
+                    <div class="full_html" style="font-size: 12px; line-height: 1.6;">
+                        {{mark.full_html|safe}}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Sidebar -->
+            <div class="sidebar-right tags-sidebar">
+                <h3>Mark Info</h3>
+                <div class="tag-list">
+                    <div class="tag-item">
+                        <span>Type:</span>
+                        <span class="tag-count">{{ mark.type }}</span>
+                    </div>
+                    <div class="tag-item">
+                        <span>Clicks:</span>
+                        <span class="tag-count">{{ mark.clicks }}</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}
