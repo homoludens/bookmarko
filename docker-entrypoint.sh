@@ -51,7 +51,7 @@ if [ -n "$FLASKMARKS_ADMIN_USER" ] && [ -n "$FLASKMARKS_ADMIN_PASSWORD" ]; then
     python -c "
 from flaskmarks import create_app
 from flaskmarks.models.user import User
-from flaskmarks.core.extensions import db
+from flaskmarks.core.extensions import db, bcrypt
 import os
 
 app = create_app()
@@ -62,8 +62,8 @@ with app.app_context():
         user = User(
             username=os.environ['FLASKMARKS_ADMIN_USER'],
             email=os.environ.get('FLASKMARKS_ADMIN_EMAIL', 'admin@localhost'),
-            password=os.environ['FLASKMARKS_ADMIN_PASSWORD']
         )
+        user.password = bcrypt.generate_password_hash(os.environ['FLASKMARKS_ADMIN_PASSWORD'])
         db.session.add(user)
         db.session.commit()
         print('Admin user created successfully!')
