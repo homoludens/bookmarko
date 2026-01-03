@@ -406,3 +406,44 @@ a:hover {
     outline-color: var(--link-color);
     background-color: rgba(110, 168, 254, 0.15);
 }
+
+/* ============================================
+   CHAT PAGE - Dark mode
+   ============================================ */
+
+[data-theme="dark"] .chat-messages {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .message-assistant .message-content {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .message-assistant .message-content strong {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .markdown-content code {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .markdown-content pre {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .markdown-content blockquote {
+    border-left-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .source-item {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .source-score {
+    color: var(--text-muted);
+}
