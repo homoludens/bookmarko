@@ -64,5 +64,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5000/login || exit 1
 
-
+ENTRYPOINT [ "/app/docker-entrypoint.sh" ]
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--threads", "2", "flaskmarks:create_app()"]
