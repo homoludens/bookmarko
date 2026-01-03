@@ -1,0 +1,206 @@
+{% extends "themes/delicious/base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="delicious-layout">
+        <!-- Left Sidebar -->
+        <div class="sidebar-left sidebar">
+            <div class="user-info">
+                <h2>Chat</h2>
+                <div class="user-tabs">
+                    <a href="{{ url_for('marks.allmarks') }}">Bookmarks</a> |
+                    <a href="{{ url_for('tags.cloud') }}">Tags</a> |
+                    <a href="{{ url_for('chat.chat_page') }}" class="fw-bold">Chat</a>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h4>Actions</h4>
+                <a href="#" id="clearHistoryLink">Clear History</a>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="content-header">
+                <span>Chat with Your Bookmarks</span>
+            </div>
+            
+            {% include "flash.html" %}
+            
+            <div class="p-3">
+                <div id="chatMessages" class="chat-messages mb-3">
+                    {% if not chat_history %}
+                    <div class="text-center py-4" id="emptyState">
+                        <p>Ask me anything about your bookmarks!</p>
+                        <p class="text-muted">I'll search through your saved content to find relevant information.</p>
+                    </div>
+                    {% else %}
+                    {% for msg in chat_history %}
+                    <div class="message {% if msg.role == 'user' %}message-user{% else %}message-assistant{% endif %} mb-3">
+                        <div class="message-content">
+                            {% if msg.role == 'user' %}
+                            <strong>You:</strong>
+                            <p class="mb-0 mt-1">{{ msg.content }}</p>
+                            {% else %}
+                            <strong>Assistant:</strong>
+                            <div class="mb-0 mt-1 markdown-content">{{ msg.content }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+
+                <form id="chatForm" onsubmit="return false;">
+                    {{ form.hidden_tag() }}
+                    <div class="input-group">
+                        {{ form.query(class="form-control", id="queryInput", placeholder="Ask about your bookmarks...") }}
+                        <button type="button" class="btn btn-primary" id="sendBtn">Send</button>
+                    </div>
+                    <div class="form-text text-muted mt-1">
+                        Press Enter to send, Shift+Enter for new line
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Right Sidebar - Sources -->
+        <div class="sidebar-right tags-sidebar">
+            <h3>Sources</h3>
+            <div class="tag-list" id="sourcesPanel">
+                <div id="sourcesList" class="sources-list">
+                    <p class="text-muted" style="font-size: 11px;">Sources will appear here after you ask a question.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-messages {
+    height: 450px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    padding: 15px;
+    background-color: var(--bg-secondary);
+}
+
+.message-content {
+    padding: 10px 12px;
+    border-radius: 3px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.message-user .message-content {
+    background-color: var(--header-bg);
+    color: white;
+    margin-left: 15%;
+}
+
+.message-assistant .message-content {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    margin-right: 15%;
+}
+
+.markdown-content { line-height: 1.6; }
+.markdown-content p { margin-bottom: 8px; }
+.markdown-content code { background-color: rgba(0,0,0,0.08); padding: 2px 5px; border-radius: 2px; font-size: 11px; }
+
+.sources-list .source-item {
+    padding: 5px 0;
+    border-bottom: 1px solid var(--bg-tertiary);
+    font-size: 11px;
+}
+.sources-list .source-item a { color: var(--link-color); text-decoration: none; }
+.source-score { font-size: 10px; color: var(--text-muted); display: block; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatMessages = document.getElementById('chatMessages');
+    const queryInput = document.getElementById('queryInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const sourcesList = document.getElementById('sourcesList');
+    const clearHistoryLink = document.getElementById('clearHistoryLink');
+    const emptyState = document.getElementById('emptyState');
+
+    function scrollToBottom() { chatMessages.scrollTop = chatMessages.scrollHeight; }
+    function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+    function renderMarkdown(text) { return typeof marked !== 'undefined' ? marked.parse(text) : escapeHtml(text).replace(/\n/g, '<br>'); }
+
+    function addMessage(role, content) {
+        if (emptyState) emptyState.remove();
+        const label = role === 'user' ? 'You' : 'Assistant';
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message message-${role} mb-3`;
+        messageDiv.innerHTML = role === 'user'
+            ? `<div class="message-content"><strong>${label}:</strong><p class="mb-0 mt-1">${escapeHtml(content).replace(/\n/g, '<br>')}</p></div>`
+            : `<div class="message-content"><strong>${label}:</strong><div class="mb-0 mt-1 markdown-content">${renderMarkdown(content)}</div></div>`;
+        chatMessages.appendChild(messageDiv);
+        scrollToBottom();
+    }
+
+    function setLoading(loading) {
+        sendBtn.disabled = loading;
+        sendBtn.innerHTML = loading ? '...' : 'Send';
+        queryInput.disabled = loading;
+        if (!loading) queryInput.focus();
+    }
+
+    function showSources(sources) {
+        sourcesList.innerHTML = sources && sources.length > 0
+            ? sources.map(s => `<div class="source-item"><a href="${escapeHtml(s.url)}" target="_blank">${escapeHtml(s.title)}</a><span class="source-score">relevance: ${(s.score * 100).toFixed(1)}%</span></div>`).join('')
+            : '<p class="text-muted" style="font-size: 11px;">No sources found.</p>';
+    }
+
+    async function sendMessage() {
+        const query = queryInput.value.trim();
+        if (!query) return;
+        addMessage('user', query);
+        queryInput.value = '';
+        setLoading(true);
+        try {
+            const response = await fetch('{{ url_for("chat.send_message") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ 'csrf_token': '{{ form.csrf_token._value() }}', 'query': query })
+            });
+            const data = await response.json();
+            addMessage('assistant', data.error ? 'Error: ' + data.error : data.answer);
+            if (!data.error) showSources(data.sources);
+        } catch (error) {
+            addMessage('assistant', 'Sorry, an error occurred.');
+        }
+        setLoading(false);
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    queryInput.addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+
+    clearHistoryLink.addEventListener('click', async function(e) {
+        e.preventDefault();
+        if (!confirm('Clear all chat history?')) return;
+        await fetch('{{ url_for("chat.clear_history") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ 'csrf_token': '{{ form.csrf_token._value() }}' })
+        });
+        location.reload();
+    });
+
+    document.querySelectorAll('.message-assistant .markdown-content').forEach(el => {
+        if (typeof marked !== 'undefined') el.innerHTML = marked.parse(el.textContent);
+    });
+    scrollToBottom();
+});
+</script>
+{% endblock %}
