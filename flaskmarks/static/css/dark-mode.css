@@ -364,3 +364,37 @@ a:hover {
     border-color: var(--border-color);
     opacity: 0.5;
 }
+
+/* Keyboard shortcuts modal - dark mode */
+[data-theme="dark"] .shortcuts-modal-content {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .shortcuts-modal-header {
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .shortcuts-modal-close {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .shortcuts-modal-close:hover {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .shortcuts-table kbd {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .shortcuts-toggle {
+    border-top-color: var(--border-color);
+}
+
+/* Keyboard selection - dark mode */
+[data-theme="dark"] .list-group-item.keyboard-selected {
+    outline-color: var(--link-color);
+    background-color: rgba(110, 168, 254, 0.15);
+}
