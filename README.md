@@ -88,6 +88,16 @@ docker compose exec app flask rag generate-embeddings
 
 # Access PostgreSQL
 docker compose exec db psql -U flaskmarks -d flaskmarks
+
+# remove images
+docker compose down -v --rmi local
+docker compose up -d --build
+docker volume ls
+
+# rebuild for start
+
+docker compose -f docker-compose.dev.yml down -v  
+docker compose -f docker-compose.dev.yml up   
 ```
 
 ## Data Persistence
