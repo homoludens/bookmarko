@@ -30,6 +30,7 @@ services:
         condition: service_healthy
     networks:
       - flaskmarks-network
+    entrypoint: ["/app/docker-entrypoint.sh"]
     command: ["flask", "run", "--host=0.0.0.0", "--debug"]
 
   db:

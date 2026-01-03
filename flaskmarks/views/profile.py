@@ -54,7 +54,7 @@ def userprofile():
     if form.validate_on_submit():
         form.populate_obj(u)
         if form.password.data:
-            u.password = bcrypt.generate_password_hash(form.password.data)
+            u.password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
         else:
             del u.password
         db.session.add(u)

@@ -394,3 +394,19 @@ curl "http://localhost:5000/api/v1/bookmarklet/script?token=YOUR_TOKEN"
 2. Create a new bookmark in your browser
 3. Paste the bookmarklet code as the URL
 4. Click the bookmark on any page to save it instantly
+
+
+# Docker
+
+## delete all
+docker compose down --rmi local -v
+
+## start Dev
+docker compose -f docker-compose.dev.yml up --build
+
+## logs
+docker compose logs -f
+
+
+## prod 
+docker compose build app

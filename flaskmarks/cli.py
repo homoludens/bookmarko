@@ -60,7 +60,7 @@ def register_cli(app: Flask) -> None:
         user = User()
         user.username = username
         user.email = email
-        user.password = bcrypt.generate_password_hash(password)
+        user.password = bcrypt.generate_password_hash(password).decode('utf-8')
         
         db.session.add(user)
         db.session.commit()

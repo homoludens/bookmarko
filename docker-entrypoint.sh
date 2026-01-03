@@ -29,7 +29,7 @@ except Exception as e:
 "; then
         break
     fi
-    
+
     RETRY_COUNT=$((RETRY_COUNT + 1))
     echo "PostgreSQL is unavailable - attempt $RETRY_COUNT/$MAX_RETRIES - sleeping"
     sleep 2
@@ -63,7 +63,8 @@ with app.app_context():
             username=os.environ['FLASKMARKS_ADMIN_USER'],
             email=os.environ.get('FLASKMARKS_ADMIN_EMAIL', 'admin@localhost'),
         )
-        user.password = bcrypt.generate_password_hash(os.environ['FLASKMARKS_ADMIN_PASSWORD'])
+        user.password = bcrypt.generate_password_hash(os.environ['FLASKMARKS_ADMIN_PASSWORD']).decode('utf-8')
+        print(user.password)
         db.session.add(user)
         db.session.commit()
         print('Admin user created successfully!')
@@ -71,7 +72,7 @@ with app.app_context():
         print('Admin user already exists.')
 "
 fi
-
+# $2b$12$6LMd/iRf6.egXj0hGMsOqeCNEdqtikuIJm5wfuEaHnUW7I7rs5Ri2
 # Generate embeddings if RAG is enabled and requested
 if [ "$GENERATE_EMBEDDINGS_ON_START" = "true" ]; then
     echo "Generating embeddings for existing bookmarks..."
