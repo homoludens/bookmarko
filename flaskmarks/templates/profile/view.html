@@ -64,6 +64,34 @@
             </div>
         </div>
 
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4 class="panel-title">Browser Extension</h4>
+            </div>
+            <div class="panel-body">
+                <p>Install the browser extension to quickly save bookmarks from any page.</p>
+                
+                <div class="d-flex gap-2 mb-3">
+                    <a href="{{ url_for('profile.download_firefox_extension') }}" class="btn btn-primary">
+                        <i class="bi bi-download"></i> Download for Firefox
+                    </a>
+                </div>
+                
+                <div class="alert alert-info mb-0">
+                    <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Installation Instructions</h5>
+                    <p class="mb-2">Since this is a self-hosted extension, Firefox requires manual installation:</p>
+                    <ol class="mb-0">
+                        <li>Download the extension file (.xpi)</li>
+                        <li>Open Firefox and go to <code>about:debugging#/runtime/this-firefox</code></li>
+                        <li>Click "Load Temporary Add-on..."</li>
+                        <li>Select the downloaded .xpi file</li>
+                    </ol>
+                    <hr>
+                    <p class="mb-0"><small><strong>Note:</strong> Temporary add-ons are removed when Firefox restarts. For permanent installation, use Firefox Developer Edition or ESR with <code>xpinstall.signatures.required</code> set to <code>false</code> in <code>about:config</code>.</small></p>
+                </div>
+            </div>
+        </div>
+
         <div class="panel panel-info">
             <div class="panel-heading">
                 <h4 class="panel-title">API Endpoints</h4>

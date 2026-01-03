@@ -3,6 +3,10 @@ User profile and registration views.
 """
 from __future__ import annotations
 
+import io
+import os
+import zipfile
+
 from flask import (
     Blueprint,
     abort,
@@ -12,6 +16,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
     url_for,
 )
 from flask_login import login_required
@@ -79,6 +84,37 @@ def userprofile():
         token_validity_hours=TOKEN_VALIDITY // 3600,
         bookmarklet=bookmarklet,
         server_url=server_url
+    )
+
+
+@profile.route('/extension/firefox')
+@login_required
+def download_firefox_extension():
+    """Package and serve the browser extension as XPI for Firefox."""
+    # Find the browser-extension directory
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    extension_dir = os.path.join(base_dir, 'browser-extension')
+    
+    if not os.path.exists(extension_dir):
+        abort(404, 'Browser extension not found')
+    
+    # Create XPI (ZIP) in memory
+    memory_file = io.BytesIO()
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for root, dirs, files in os.walk(extension_dir):
+            for file in files:
+                if file.startswith('.') or file == 'README.md':
+                    continue
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, extension_dir)
+                zf.write(file_path, arcname)
+    
+    memory_file.seek(0)
+    return send_file(
+        memory_file,
+        mimetype='application/x-xpinstall',
+        as_attachment=True,
+        download_name='flaskmarks-extension.xpi'
     )
 
 

@@ -349,6 +349,53 @@ All API responses follow this format:
 }
 ```
 
+Browser Extension
+=================
+
+Flaskmarks includes a browser extension for quickly saving bookmarks from any page.
+
+## Firefox Installation
+
+Since this is a self-hosted extension (not signed by Mozilla), Firefox requires manual installation:
+
+### Temporary Installation (Any Firefox)
+
+1. Download the extension from your Profile page (click "Download for Firefox")
+2. Open Firefox and go to `about:debugging#/runtime/this-firefox`
+3. Click "Load Temporary Add-on..."
+4. Select the downloaded .xpi file
+
+**Note:** Temporary add-ons are removed when Firefox restarts.
+
+### Permanent Installation (Firefox Developer Edition, Nightly, or ESR)
+
+1. Open `about:config` in Firefox
+2. Search for `xpinstall.signatures.required`
+3. Set it to `false`
+4. Download and install the .xpi file directly
+
+### Optional: Mozilla Signing (for distribution)
+
+You can submit the extension to Mozilla for signing without public listing:
+
+```bash
+# Install web-ext
+npm install -g web-ext
+
+# Sign the extension (requires Mozilla API credentials)
+cd browser-extension
+web-ext sign --channel=unlisted --api-key=YOUR_KEY --api-secret=YOUR_SECRET
+```
+
+This creates a signed .xpi that installs permanently in any Firefox version.
+
+## Extension Usage
+
+1. Click the Flaskmarks icon in your browser toolbar
+2. Configure your server URL and API token (from Profile page)
+3. Click "Save Current Tab" or "Save All Tabs" to bookmark pages
+
+
 ## Quick-Add Endpoint (Browser Extension Support)
 
 The quick-add endpoint is designed for browser extensions and bookmarklets to save bookmarks with a single click.
