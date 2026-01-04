@@ -1,0 +1,46 @@
+{% extends "themes/delicious/base.html" %}
+{% block content %}
+    <div class="container-fluid p-0">
+        <div class="delicious-layout">
+            <!-- Left Sidebar -->
+            <div class="sidebar-left sidebar">
+                <div class="user-info">
+                    <h2>{{ config['SITE_TITLE'] }}</h2>
+                    <div class="user-tabs">
+                        <a href="{{ url_for('marks.allmarks') }}">Bookmarks</a> |
+                        <a href="{{ url_for('tags.cloud') }}">Tags</a>
+                    </div>
+                </div>
+                <div class="filter-section">
+                    <h4>Actions</h4>
+                    <a href="{{ url_for('marks.edit_mark', id=mark.id) }}">Edit</a>
+                    <a href="{{ mark.url }}" target="_blank">Open Original</a>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="content-header">
+                    <span>View HTML - {{ mark.title|truncate(50) }}</span>
+                </div>
+                <div class="p-3">
+                    {% include "flash.html" %}
+                    <div class="full_html" style="background: white; padding: 15px; border-radius: 3px;">
+                        {{ mark.full_html|safe }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Sidebar -->
+            <div class="sidebar-right tags-sidebar">
+                <h3>Info</h3>
+                <div class="tag-list">
+                    <p style="font-size: 11px;"><strong>Type:</strong> {{ mark.type }}</p>
+                    {% if mark.clicks %}
+                    <p style="font-size: 11px;"><strong>Clicks:</strong> {{ mark.clicks }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

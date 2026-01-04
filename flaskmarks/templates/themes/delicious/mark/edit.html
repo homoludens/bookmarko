@@ -1,0 +1,54 @@
+{% extends "themes/delicious/base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block content %}
+    <div class="container-fluid p-0">
+        <div class="delicious-layout">
+            <!-- Left Sidebar -->
+            <div class="sidebar-left sidebar">
+                <div class="user-info">
+                    <h2>{{ config['SITE_TITLE'] }}</h2>
+                    <div class="user-tabs">
+                        <a href="{{ url_for('marks.allmarks') }}">Bookmarks</a> |
+                        <a href="{{ url_for('tags.cloud') }}">Tags</a>
+                    </div>
+                </div>
+                <div class="filter-section">
+                    <h4>Actions</h4>
+                    <a href="{{ url_for('marks.new_mark', url=mark.url, type=mark.type) }}">Clone to new</a>
+                    <a href="{{ url_for('marks.delete_mark', id=mark.id) }}" class="text-danger">Delete</a>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="content-header">
+                    <span>Edit {{ mark.type }} - {{ mark.title|truncate(50) }}</span>
+                </div>
+                <div class="p-3">
+                    {% include "flash.html" %}
+                    {{ wtf.quick_form(form, button_map={'submit_button': 'primary'}) }}
+                </div>
+            </div>
+            
+            <!-- Right Sidebar -->
+            <div class="sidebar-right tags-sidebar">
+                <h3>Info</h3>
+                <div class="tag-list">
+                    <div class="tag-item">
+                        <strong>Type:</strong> {{ mark.type }}
+                    </div>
+                    {% if mark.created %}
+                    <div class="tag-item">
+                        <strong>Created:</strong> {{ mark.created|date }}
+                    </div>
+                    {% endif %}
+                    {% if mark.clicks %}
+                    <div class="tag-item">
+                        <strong>Clicks:</strong> {{ mark.clicks }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

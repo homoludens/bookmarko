@@ -1,0 +1,99 @@
+{% extends "themes/delicious/base.html" %}
+{% block content %}
+    <div class="container-fluid p-0">
+        <div class="delicious-layout">
+            <!-- Left Sidebar -->
+            <div class="sidebar-left sidebar">
+                <div class="user-info">
+                    <h2>{{ config['SITE_TITLE'] }}</h2>
+                    <div class="user-tabs">
+                        <a href="{{ url_for('marks.allmarks') }}">Bookmarks</a> |
+                        <a href="{{ url_for('tags.cloud') }}">Tags</a>
+                    </div>
+                </div>
+                <div class="filter-section">
+                    <h4>Actions</h4>
+                    <a href="{{ url_for('marks.edit_mark', id=mark.id) }}">Edit</a>
+                    <a href="{{ mark.url }}" target="_blank">Open on YouTube</a>
+                </div>
+                {% if mark.tags %}
+                <div class="filter-section">
+                    <h4>Tags</h4>
+                    {% for t in mark.tags %}
+                        <a href="{{ url_for('marks.mark_q_tag', slug=t.title) }}">{{ t.title }}</a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="content-header">
+                    <span><i class="bi bi-youtube"></i> {{ mark.title }}</span>
+                </div>
+                <div class="p-3">
+                    {% include "flash.html" %}
+                    <div class="row">
+                        {% for i, entry in data['entries'] | enumerate %}
+                        <div class="col-sm-6 col-md-4">
+                            <div class="card mb-3">
+                                {% if entry['media_thumbnail'] %}
+                                    <img class="card-img-top img-fluid rounded" src="{{ entry['media_thumbnail'][0]['url'] }}" alt="thumbnail">
+                                {% endif %}
+                                <div class="card-body">
+                                    <ul class='statslist list-inline' style="font-size: 10px;">
+                                        <li class='list-inline-item date'>{{ entry['published'] | datewordsstr }} ago</li>
+                                        {% if entry['yt_statistics'] %}
+                                            <li class='list-inline-item viewcount'>{{ entry['yt_statistics']['viewcount'] | thousandsep }} views</li>
+                                        {% endif %}
+                                        {% if entry['gd_rating'] %}
+                                            <li class='list-inline-item votes'>&hearts;{{ entry['gd_rating']['numraters'] | thousandsep }}</li>
+                                        {% endif %}
+                                        <li class='list-inline-item duration'>{{ entry['yt_duration']['seconds'] | sectomin}} min</li>
+                                    </ul>
+                                    {% for link in entry['links'] %}
+                                        {% if link['rel'] == 'alternate' or link['rel'] == 'enclosure'%}
+                                            <h6 class="card-title"><a href="{{ link['href'] }}" target="_blank" title="{{ entry['title'] }}">{{ entry['title'] | truncate(37) }}</a></h6>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <button class="btn btn-primary btn-sm d-block w-100" data-bs-toggle="modal" data-bs-target="#desc-{{i}}-Modal">
+                                        More info
+                                    </button>
+                                    <!-- Modal -->
+                                    <div class="modal fade" id="desc-{{i}}-Modal" tabindex="-1" aria-labelledby="desc-{{i}}-ModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="desc-{{i}}-ModalLabel">{{ entry['title'] }}</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <pre style="white-space: pre-wrap; font-size: 12px;">{{ entry['summary'] }}</pre>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Sidebar -->
+            <div class="sidebar-right tags-sidebar">
+                <h3>Video Info</h3>
+                <div class="tag-list">
+                    <p style="font-size: 11px;"><strong>Videos:</strong> {{ data['entries']|length }}</p>
+                    {% if mark.clicks %}
+                    <p style="font-size: 11px;"><strong>Views:</strong> {{ mark.clicks }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

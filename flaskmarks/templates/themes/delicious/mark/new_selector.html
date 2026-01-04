@@ -1,0 +1,49 @@
+{% extends "themes/delicious/base.html" %}
+{% block content %}
+    <div class="container-fluid p-0">
+        <div class="delicious-layout">
+            <!-- Left Sidebar -->
+            <div class="sidebar-left sidebar">
+                <div class="user-info">
+                    <h2>{{ config['SITE_TITLE'] }}</h2>
+                    <div class="user-tabs">
+                        <a href="{{ url_for('marks.allmarks') }}">Bookmarks</a> |
+                        <a href="{{ url_for('tags.cloud') }}">Tags</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="content-header">
+                    <span>{{ title }}</span>
+                </div>
+                <div class="p-3">
+                    {% include "flash.html" %}
+                    <p>What type of bookmark would you like to add?</p>
+                    <div class="d-flex flex-column gap-2" style="max-width: 300px;">
+                        <a href="{{ url_for('marks.new_mark', type='bookmark') }}" class="btn btn-primary">
+                            <i class="bi bi-bookmark"></i> Bookmark
+                        </a>
+                        <a href="{{ url_for('marks.new_mark', type='feed') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-rss"></i> RSS/Atom Feed
+                        </a>
+                        <a href="{{ url_for('marks.new_mark', type='youtube') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-youtube"></i> YouTube Video
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Sidebar -->
+            <div class="sidebar-right tags-sidebar">
+                <h3>Types</h3>
+                <div class="tag-list">
+                    <p style="font-size: 11px;"><strong>Bookmark:</strong> Save any web page</p>
+                    <p style="font-size: 11px;"><strong>Feed:</strong> Track RSS/Atom updates</p>
+                    <p style="font-size: 11px;"><strong>YouTube:</strong> Save videos with embed</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

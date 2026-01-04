@@ -6,7 +6,6 @@ from flask import (
     flash,
     g,
     jsonify,
-    render_template,
     request,
     session,
     current_app,
@@ -14,6 +13,7 @@ from flask import (
 from flask_login import login_required
 
 from flaskmarks.core.rag.service import get_rag_service
+from flaskmarks.core.theme_utils import render_themed_template
 from flaskmarks.forms.chat import ChatForm
 
 chat = Blueprint('chat', __name__)
@@ -28,7 +28,7 @@ def chat_page():
     # Get chat history from session
     chat_history = session.get('chat_history', [])
 
-    return render_template(
+    return render_themed_template(
         'chat/index.html',
         title='Chat with Bookmarks',
         form=form,
