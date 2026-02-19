@@ -79,6 +79,20 @@ For development with hot-reloading:
 docker compose -f docker-compose.dev.yml up
 ```
 
+## Running Tests
+
+Run the default regression suite locally:
+
+```bash
+pytest
+```
+
+Run tests in Docker:
+
+```bash
+docker compose exec app pytest
+```
+
 ## Docker Commands
 
 ```bash

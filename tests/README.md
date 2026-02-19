@@ -9,5 +9,11 @@ This repository keeps domain-oriented suite folders for review regressions:
 
 Shared fixtures and test doubles live in `tests/conftest.py`.
 
+Default command:
+
+```bash
+pytest
+```
+
 Legacy root-level test modules remain supported for compatibility while suites are
 incrementally organized into the domain folders.
