@@ -6,7 +6,40 @@ and configuring the Flaskmarks application.
 """
 from __future__ import annotations
 
+import os
+
 from flask import Flask
+
+_PRODUCTION_ENV_NAMES = {'production', 'prod'}
+_INSECURE_SECRET_KEY_VALUES = {'super-duper-secret-key-CHANGE-ME'}
+
+
+def _is_production_runtime(app: Flask) -> bool:
+    env_name = app.config.get('ENV') or os.environ.get('FLASK_ENV') or os.environ.get('ENV') or ''
+    return str(env_name).strip().lower() in _PRODUCTION_ENV_NAMES
+
+
+def _validate_required_production_config(app: Flask) -> None:
+    missing = []
+    if not os.environ.get('FLASK_SECRET_KEY'):
+        missing.append('FLASK_SECRET_KEY')
+    if not os.environ.get('DATABASE_URL'):
+        missing.append('DATABASE_URL')
+    if missing:
+        raise RuntimeError(
+            'Missing required production configuration: ' + ', '.join(missing)
+        )
+
+    secret_key = app.config.get('SECRET_KEY')
+    if not secret_key or str(secret_key).strip() in _INSECURE_SECRET_KEY_VALUES:
+        raise RuntimeError(
+            'Invalid production configuration: FLASK_SECRET_KEY must be explicitly configured.'
+        )
+
+    if not app.config.get('SQLALCHEMY_DATABASE_URI'):
+        raise RuntimeError(
+            'Invalid production configuration: DATABASE_URL must be explicitly configured.'
+        )
 
 
 def create_app(config_object: str = "config") -> Flask:
@@ -21,6 +54,8 @@ def create_app(config_object: str = "config") -> Flask:
     """
     app = Flask(__name__)
     app.config.from_object(config_object)
+    if _is_production_runtime(app):
+        _validate_required_production_config(app)
     
     # Initialize extensions
     from flaskmarks.core.extensions import init_extensions
