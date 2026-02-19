@@ -22,12 +22,16 @@
             <script>
                 var timeout;
                 var totalLines = {{ total_lines }};
+                var importJobId = "{{ import_job_id }}";
                 
                 async function getStatus() {
                     let data;
                     
                     try {
-                        const res = await fetch("/marks/import/status");
+                        const res = await fetch("/marks/import/status?job_id=" + encodeURIComponent(importJobId));
+                        if (!res.ok) {
+                            throw new Error("Status request failed with HTTP " + res.status);
+                        }
                         data = await res.json();
                     } catch (e) {
                         console.error("Error fetching status:", e);
@@ -67,5 +71,4 @@
         {% endif %}
     </div>
 {% endblock %}
-
 

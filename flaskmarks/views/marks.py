@@ -12,9 +12,7 @@ from flask import (
     request,
     abort,
     jsonify,
-    json,
     current_app,
-    session,
 )
 from flask_login import login_user, logout_user, login_required
 from werkzeug.utils import secure_filename
@@ -500,7 +498,7 @@ def thread_import_file(
     text_file_path: str | List[str],
     app,
     user_id: int,
-    job_id: str | None = None,
+    job_id: str,
 ):
     maxthreads = 20
     lines_new = []
@@ -594,7 +592,6 @@ def import_marks():
             return render_template('profile/import_progress.html', form=form, status=0)
 
         job_id = uuid4().hex
-        session['latest_import_job_id'] = job_id
         create_or_reset_import_job(user_id=u.id, job_id=job_id, total_lines=total_lines)
 
         t1 = Thread(
@@ -603,27 +600,28 @@ def import_marks():
         )
         t1.start()
 
-        return render_template('profile/import_progress.html', total_lines=total_lines, status=1)
+        return render_template(
+            'profile/import_progress.html',
+            total_lines=total_lines,
+            status=1,
+            import_job_id=job_id,
+        )
 
     return render_template('profile/import_progress.html', form=form, status=0)
 
 @marks.route('/marks/import/status', methods=['GET', 'POST'])
 @login_required
 def getStatus():
-    job_id = request.args.get('job_id') or session.get('latest_import_job_id')
+    job_id = request.args.get('job_id', type=str)
+    if not job_id:
+        return jsonify(error='job_id is required'), 400
+
     scoped_status = get_import_job_status(user_id=g.user.id, job_id=job_id)
-    if scoped_status is None:
-        scoped_status = get_import_job_status(user_id=g.user.id)
 
     if scoped_status is None:
-        statusList = {
-            'status': 0,
-            'total_lines': 0,
-            'complete': False,
-        }
-    else:
-        statusList = scoped_status.as_dict()
-    return json.dumps(statusList)
+        return jsonify(error='import job not found for current user'), 404
+
+    return jsonify(scoped_status.as_dict())
 
 #########
 # Other #
