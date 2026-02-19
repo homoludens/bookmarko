@@ -23,6 +23,7 @@ services:
       - FLASKMARKS_ADMIN_EMAIL=admin@localhost
     volumes:
       - .:/app
+      - ./logs:/app/logs
       - embeddings-cache:/app/cache
       - model-cache:/app/sentence-transformers.model
     depends_on:

@@ -49,6 +49,7 @@ from ..models import Mark
 from ..models.tag import Tag
 
 import logging
+import sys
 from urllib.parse import urlparse
 
 from threading import Thread
@@ -124,7 +125,18 @@ def extract_urls_from_bookmarks(file_path: str) -> List[str]:
 
 
 
-logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
+LOG_DIR = os.environ.get('FLASKMARKS_LOG_DIR', '/app/logs')
+os.makedirs(LOG_DIR, exist_ok=True)
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(os.path.join(LOG_DIR, 'record.log')),
+    ],
+    force=True,
+)
 
 marks = Blueprint('marks', __name__)
 

@@ -20,6 +20,7 @@ services:
       - FLASKMARKS_ADMIN_EMAIL=${FLASKMARKS_ADMIN_EMAIL:-}
       - GENERATE_EMBEDDINGS_ON_START=${GENERATE_EMBEDDINGS_ON_START:-false}
     volumes:
+      - ./logs:/app/logs
       - embeddings-cache:/app/cache
       - model-cache:/app/sentence-transformers.model
     depends_on:
