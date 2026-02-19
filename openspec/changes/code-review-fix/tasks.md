@@ -31,7 +31,7 @@
 
 ## 5. Test Baseline And Delivery Checks
 
-- [ ] 5.1 Create a baseline pytest structure for auth, mark CRUD, import, and security regression suites. `Complexity: Middle`
+- [x] 5.1 Create a baseline pytest structure for auth, mark CRUD, import, and security regression suites. `Complexity: Middle`
 - [ ] 5.2 Add CI/local test command updates so new regression suites are executable by default. `Complexity: Low`
 - [ ] 5.3 Run the new/updated test suites and fix any discovered regressions. `Complexity: High`
 - [ ] 5.4 Document rollout and rollback checkpoints for route method changes and security controls. `Complexity: Low`
