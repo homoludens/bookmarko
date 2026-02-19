@@ -30,5 +30,5 @@ SECRET_KEY = os.environ.get('FLASK_SECRET_KEY', 'super-duper-secret-key-CHANGE-M
 """
 Debugging
 """
-DEBUG_MODE = True
+DEBUG_MODE = os.environ.get('FLASK_DEBUG', '0') == '1'
 DEBUG_TB_INTERCEPT_REDIRECTS = False

@@ -12,11 +12,38 @@ from flask import Flask
 
 _PRODUCTION_ENV_NAMES = {'production', 'prod'}
 _INSECURE_SECRET_KEY_VALUES = {'super-duper-secret-key-CHANGE-ME'}
+_TRUE_VALUES = {'1', 'true', 'yes', 'on'}
 
 
 def _is_production_runtime(app: Flask) -> bool:
     env_name = app.config.get('ENV') or os.environ.get('FLASK_ENV') or os.environ.get('ENV') or ''
     return str(env_name).strip().lower() in _PRODUCTION_ENV_NAMES
+
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return str(value).strip().lower() in _TRUE_VALUES
+
+
+def _apply_safe_debug_defaults(app: Flask) -> None:
+    if not _is_production_runtime(app):
+        return
+
+    raw_debug = os.environ.get('FLASK_DEBUG')
+    if raw_debug is None:
+        debug_enabled = False
+    else:
+        debug_enabled = _env_flag('FLASK_DEBUG', default=False)
+        allow_production_debug = _env_flag('ALLOW_PRODUCTION_DEBUG', default=False)
+        if debug_enabled and not allow_production_debug:
+            raise RuntimeError(
+                'Invalid production configuration: FLASK_DEBUG=1 requires ALLOW_PRODUCTION_DEBUG=1.'
+            )
+
+    app.config['DEBUG'] = debug_enabled
+    app.config['DEBUG_MODE'] = debug_enabled
 
 
 def _validate_required_production_config(app: Flask) -> None:
@@ -54,6 +81,7 @@ def create_app(config_object: str = "config") -> Flask:
     """
     app = Flask(__name__)
     app.config.from_object(config_object)
+    _apply_safe_debug_defaults(app)
     if _is_production_runtime(app):
         _validate_required_production_config(app)
     
