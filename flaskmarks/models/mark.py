@@ -22,8 +22,9 @@ from .tag import Tag
 ass_tbl = db.Table(
     'marks_tags',
     db.metadata,
-    db.Column('left_id', db.Integer, db.ForeignKey('marks.id')),
-    db.Column('right_id', db.Integer, db.ForeignKey('tags.id'))
+    db.Column('left_id', db.Integer, db.ForeignKey('marks.id'), index=True),
+    db.Column('right_id', db.Integer, db.ForeignKey('tags.id'), index=True),
+    db.Index('ix_marks_tags_left_right', 'left_id', 'right_id')
 )
 
 
@@ -37,7 +38,7 @@ class Mark(db.Model):
     # __fulltext_columns__ = ('title', 'description', 'full_html', 'url')
 
     id = db.Column(db.Integer, primary_key=True)
-    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     type = db.Column(db.Unicode(255), nullable=False)
     title = db.Column(db.Unicode(255), nullable=False)
     description = db.Column(Text(), nullable=True)
