@@ -14,6 +14,7 @@ from newspaper import Article, ArticleBinaryDataException
 from readability.readability import Document
 
 from flaskmarks.core.extensions import db
+from flaskmarks.core.html_sanitizer import sanitize_external_html
 from flaskmarks.core.youtube import get_youtube_info, check_url_video
 from flaskmarks.models import Mark
 from flaskmarks.models.tag import Tag
@@ -61,9 +62,11 @@ def fetch_url_metadata(url: str) -> dict[str, Any] | None:
             for auto_tag in youtube_info['tags']:
                 m['tags'].append(auto_tag)
 
+            m['full_html'] = sanitize_external_html(m['full_html'])
             return m
         except Exception as e:
             print(f"YouTube extraction failed: {e}")
+            m['full_html'] = sanitize_external_html(m['full_html'])
             return m
 
     # Check content type
@@ -101,13 +104,13 @@ def fetch_url_metadata(url: str) -> dict[str, Any] | None:
                 readable = Document(full_html)
                 readable_html = readable.summary()
                 readable_title = readable.title()
-                m['full_html'] = readable_html
+                m['full_html'] = sanitize_external_html(readable_html)
                 m['description'] = article.summary
             else:
-                m['full_html'] = article.summary
+                m['full_html'] = sanitize_external_html(article.summary)
                 m['description'] = article.summary
         else:
-            m['full_html'] = url
+            m['full_html'] = sanitize_external_html(url)
 
         m['title'] = readable_title if readable_title else url
 
@@ -117,6 +120,7 @@ def fetch_url_metadata(url: str) -> dict[str, Any] | None:
         for auto_tag in article.keywords[:5]:
             m['tags'].append(auto_tag)
 
+    m['full_html'] = sanitize_external_html(m['full_html'])
     print(f'Metadata fetched for: "{m["title"]}"')
     return m
 
@@ -237,6 +241,7 @@ class MarksImportThread(Thread):
             for auto_tag in youtube_info['tags']:
                 m['tags'].append(auto_tag)
 
+            m['full_html'] = sanitize_external_html(m['full_html'])
             self.m = m
             return
 
@@ -276,13 +281,13 @@ class MarksImportThread(Thread):
                     readable = Document(full_html)
                     readable_html = readable.summary()
                     readable_title = readable.title()
-                    m['full_html'] = readable_html
+                    m['full_html'] = sanitize_external_html(readable_html)
                     m['description'] = article.summary
                 else:
-                    m['full_html'] = article.summary
+                    m['full_html'] = sanitize_external_html(article.summary)
                     m['description'] = article.summary
             else:
-                m['full_html'] = url
+                m['full_html'] = sanitize_external_html(url)
 
             m['title'] = readable_title if readable_title else url
 
@@ -294,6 +299,7 @@ class MarksImportThread(Thread):
 
         print(f'New bookmark: "{m["title"]}", added.')
 
+        m['full_html'] = sanitize_external_html(m['full_html'])
         self.m = m
         self.insert_mark_thread()
 
@@ -311,7 +317,7 @@ class MarksImportThread(Thread):
             m.url = data['url']
             m.title = data['title']
             m.description = data['description']
-            m.full_html = data['full_html']
+            m.full_html = sanitize_external_html(data['full_html'])
             m.type = data['type']
 
             for auto_tag in data['tags']:

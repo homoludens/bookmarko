@@ -33,6 +33,7 @@ from typing import List
 
 from ..core.setup import app, db
 from ..core.error import is_safe_url
+from ..core.html_sanitizer import sanitize_external_html
 from ..core.marks_import_thread import MarksImportThread
 from ..core.theme_utils import render_themed_template
 
@@ -269,7 +270,7 @@ def new_mark(type):
             if imported_mark:
                 m.title = imported_mark.get('title') or m.title
                 m.description = imported_mark.get('description') or m.description
-                m.full_html = imported_mark.get('full_html') or m.full_html
+                m.full_html = sanitize_external_html(imported_mark.get('full_html')) or m.full_html
                 if not form.tags.data and imported_mark.get('tags'):
                     tags = []
                     for tag_title in imported_mark.get('tags', []):

@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 from flask import request, g, current_app
 
 from flaskmarks.core.extensions import db
+from flaskmarks.core.html_sanitizer import sanitize_external_html
 from flaskmarks.core.marks_import_thread import fetch_url_metadata
 from flaskmarks.models.mark import Mark
 from flaskmarks.models.tag import Tag
@@ -59,7 +60,7 @@ def async_metadata_extraction(mark_id: int, url: str, app) -> None:
 
                     # Update full_html if empty
                     if not mark.full_html and data.get('full_html'):
-                        mark.full_html = data['full_html']
+                        mark.full_html = sanitize_external_html(data['full_html'])
 
                     # Add auto-extracted tags
                     if data.get('tags'):

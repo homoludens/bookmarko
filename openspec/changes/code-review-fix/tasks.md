@@ -8,7 +8,7 @@
 
 ## 2. HTML Safety And URL Fetch Controls
 
-- [ ] 2.1 Implement HTML sanitization/escaping policy for externally sourced page content before rendering. `Complexity: High`
+- [x] 2.1 Implement HTML sanitization/escaping policy for externally sourced page content before rendering. `Complexity: High`
 - [ ] 2.2 Update HTML display templates to ensure unsafe markup is never executed in user context. `Complexity: Middle`
 - [ ] 2.3 Implement URL scheme and resolved-address validation to allow only public `http/https` targets. `Complexity: High`
 - [ ] 2.4 Add fetch-path tests for blocked loopback/private/link-local targets and allowed public targets. `Complexity: Middle`
