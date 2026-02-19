@@ -15,6 +15,10 @@ from readability.readability import Document
 
 from flaskmarks.core.extensions import db
 from flaskmarks.core.html_sanitizer import sanitize_external_html
+from flaskmarks.core.url_fetch_validation import (
+    URLTargetValidationError,
+    ensure_public_http_url,
+)
 from flaskmarks.core.youtube import get_youtube_info, check_url_video
 from flaskmarks.models import Mark
 from flaskmarks.models.tag import Tag
@@ -29,7 +33,12 @@ def fetch_url_metadata(url: str) -> dict[str, Any] | None:
 
     Returns:
         Dictionary with extracted metadata or None if failed
+
+    Raises:
+        URLTargetValidationError: If URL is disallowed for outbound fetches
     """
+    ensure_public_http_url(url)
+
     url_domain = tldextract.extract(url).domain
     readable_title = None
 
@@ -190,6 +199,14 @@ class MarksImportThread(Thread):
             # Test if it looks like a URL
             if not self.uri_validator(url):
                 print("not valid uri")
+                return False
+
+            try:
+                ensure_public_http_url(url)
+            except URLTargetValidationError as exc:
+                current_app.logger.warning(
+                    f'Rejected non-public URL target "{url}": {exc}'
+                )
                 return False
 
             existing_mark = Mark.query.filter(

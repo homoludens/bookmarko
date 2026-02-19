@@ -8,13 +8,16 @@ from __future__ import annotations
 
 import threading
 from datetime import datetime as dt
-from urllib.parse import urlparse
 
 from flask import request, g, current_app
 
 from flaskmarks.core.extensions import db
 from flaskmarks.core.html_sanitizer import sanitize_external_html
 from flaskmarks.core.marks_import_thread import fetch_url_metadata
+from flaskmarks.core.url_fetch_validation import (
+    URLTargetValidationError,
+    ensure_public_http_url,
+)
 from flaskmarks.models.mark import Mark
 from flaskmarks.models.tag import Tag
 
@@ -22,15 +25,6 @@ from . import api_v1
 from .auth import token_required
 from .errors import api_response, error_response
 from .serializers import serialize_mark
-
-
-def is_valid_url(url: str) -> bool:
-    """Validate URL format."""
-    try:
-        result = urlparse(url)
-        return all([result.scheme, result.netloc])
-    except Exception:
-        return False
 
 
 def async_metadata_extraction(mark_id: int, url: str, app) -> None:
@@ -78,6 +72,10 @@ def async_metadata_extraction(mark_id: int, url: str, app) -> None:
                     db.session.commit()
                     current_app.logger.info(f"Metadata extracted for mark {mark_id}: {mark.title}")
 
+        except URLTargetValidationError as e:
+            current_app.logger.warning(
+                f"Rejected metadata extraction URL for mark {mark_id}: {e}"
+            )
         except Exception as e:
             current_app.logger.error(f"Error extracting metadata for mark {mark_id}: {e}")
             import traceback
@@ -148,8 +146,14 @@ def quickadd():
     if not url:
         return error_response('URL is required', 400, {'url': 'URL is required'})
 
-    if not is_valid_url(url):
-        return error_response('Invalid URL format', 400, {'url': 'Must be a valid URL with scheme (http/https)'})
+    try:
+        ensure_public_http_url(url)
+    except URLTargetValidationError as e:
+        return error_response(
+            'URL is not allowed',
+            400,
+            {'url': str(e)},
+        )
 
     # Check for duplicate
     existing = user.q_marks_by_url(url)
