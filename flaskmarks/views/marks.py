@@ -265,9 +265,27 @@ def new_mark(type):
         # if no title we will get title and text
         if not form.title.data:
             r = MarksImportThread(form.url.data, u.id)
-            m = r.run()
+            imported_mark = r.run()
+            if imported_mark:
+                m.title = imported_mark.get('title') or m.title
+                m.description = imported_mark.get('description') or m.description
+                m.full_html = imported_mark.get('full_html') or m.full_html
+                if not form.tags.data and imported_mark.get('tags'):
+                    tags = []
+                    for tag_title in imported_mark.get('tags', []):
+                        tag = Tag.check(tag_title.lower())
+                        if not tag:
+                            tag = Tag(tag_title.lower())
+                            db.session.add(tag)
+                        tags.append(tag)
+                    m.tags = tags
 
-        flash('New %s: "%s", added.' % (type, m['title']), category='success')
+        if not m.title:
+            m.title = m.url
+
+        db.session.add(m)
+        db.session.commit()
+        flash('New %s: "%s", added.' % (type, m.title), category='success')
         return redirect(url_for('marks.allmarks'))
     """
     GET
