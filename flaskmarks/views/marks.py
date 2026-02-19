@@ -366,7 +366,7 @@ def view_html_mark(id):
 
 
 
-@marks.route('/mark/delete/<int:id>')
+@marks.route('/mark/delete/<int:id>', methods=['POST', 'DELETE'])
 @login_required
 def delete_mark(id):
     m = g.user.get_mark_by_id(id)
@@ -374,10 +374,8 @@ def delete_mark(id):
         db.session.delete(m)
         db.session.commit()
         flash('Mark "%s" deleted.' % (m.title), category='info')
-        """
-        if request.referrer and is_safe_url(request.referrer):
-            return redirect(request.referrer)
-        """
+        if request.method == 'DELETE':
+            return ('', 204)
         return redirect(url_for('marks.allmarks'))
     abort(403)
 
@@ -385,11 +383,16 @@ def delete_mark(id):
 ########
 # AJAX #
 ########
-@marks.route('/mark/inc')
+@marks.route('/mark/inc', methods=['POST'])
 @login_required
 def ajax_mark_inc():
-    if request.args.get('id'):
-        id = int(request.args.get('id'))
+    mark_id = request.form.get('id')
+    if not mark_id and request.is_json:
+        payload = request.get_json(silent=True) or {}
+        mark_id = payload.get('id')
+
+    if mark_id:
+        id = int(mark_id)
         m = g.user.get_mark_by_id(id)
         if not m:
             return jsonify(status='forbidden')
