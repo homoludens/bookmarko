@@ -59,6 +59,12 @@ RAG_ENABLED=true
 GROQ_API_KEY=your-groq-api-key
 ```
 
+Generate a bcrypt password hash (useful for manual database updates):
+
+```bash
+python -c "from flaskmarks import create_app; from flaskmarks.core.extensions import bcrypt; app=create_app(); with app.app_context(): print(bcrypt.generate_password_hash('YOUR_PASSWORD').decode('utf-8'))"
+```
+
 ## Development with Docker
 
 For development with hot-reloading:
