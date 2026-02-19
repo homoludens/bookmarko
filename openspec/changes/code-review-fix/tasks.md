@@ -1,17 +1,17 @@
 ## 1. Mark Creation And Mutation Safety
 
-- [ ] 1.1 Refactor `new_mark` flow to use a single ORM object path and one commit for successful requests. `Complexity: Low`
+- [x] 1.1 Refactor `new_mark` flow to use a single ORM object path and one commit for successful requests. `Complexity: Low`
 - [x] 1.2 Add request-path tests for mark creation with title and without optional fields to prevent regression. `Complexity: Low`
 - [x] 1.3 Convert state-changing mark routes from GET to POST/DELETE handlers and update route wiring. `Complexity: Middle`
 - [x] 1.4 Update templates/forms for mutation endpoints to submit CSRF-protected requests. `Complexity: Low`
-- [ ] 1.5 Add regression tests proving GET mutation requests are rejected and CSRF validation is enforced. `Complexity: Middle`
+- [x] 1.5 Add regression tests proving GET mutation requests are rejected and CSRF validation is enforced. `Complexity: Middle`
 
 ## 2. HTML Safety And URL Fetch Controls
 
 - [x] 2.1 Implement HTML sanitization/escaping policy for externally sourced page content before rendering. `Complexity: High`
 - [x] 2.2 Update HTML display templates to ensure unsafe markup is never executed in user context. `Complexity: Middle`
 - [x] 2.3 Implement URL scheme and resolved-address validation to allow only public `http/https` targets. `Complexity: High`
-- [ ] 2.4 Add fetch-path tests for blocked loopback/private/link-local targets and allowed public targets. `Complexity: Middle`
+- [x] 2.4 Add fetch-path tests for blocked loopback/private/link-local targets and allowed public targets. `Complexity: Middle`
 - [x] 2.5 Add security regression tests for stored XSS neutralization behavior. `Complexity: Middle`
 
 ## 3. Configuration And Import Status Isolation
