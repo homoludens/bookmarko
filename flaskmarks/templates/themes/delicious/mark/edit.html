@@ -15,7 +15,10 @@
                 <div class="filter-section">
                     <h4>Actions</h4>
                     <a href="{{ url_for('marks.new_mark', url=mark.url, type=mark.type) }}">Clone to new</a>
-                    <a href="{{ url_for('marks.delete_mark', id=mark.id) }}" class="text-danger">Delete</a>
+                    <form action="{{ url_for('marks.delete_mark', id=mark.id) }}" method="post" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-link p-0 text-danger text-decoration-none">Delete</button>
+                    </form>
                 </div>
             </div>
             
