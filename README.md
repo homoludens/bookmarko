@@ -93,6 +93,42 @@ Run tests in Docker:
 docker compose exec app pytest
 ```
 
+## Rollout and Rollback Checkpoints (Route/Security Changes)
+
+Use these checkpoints when deploying route-method and security-control changes.
+
+### Rollout
+
+1. Pre-deploy verification:
+```bash
+pytest tests/test_mark_mutation_security.py tests/test_stored_xss_regression.py tests/test_fetch_path_url_targets.py tests/test_config_and_import_status_isolation.py
+```
+2. Deploy and verify route-method hardening:
+- Confirm `GET /mark/delete/<id>` and `GET /mark/inc` return `405`.
+- Confirm UI delete/click flows still work via form/JS `POST` requests with CSRF token.
+3. Verify security controls:
+- Confirm stored HTML renders escaped/sanitized (no script execution).
+- Confirm private/loopback/link-local fetch targets are rejected.
+- Confirm production startup fails fast when required secrets are missing.
+4. Observe runtime after deploy:
+- Watch for spikes in `400` CSRF failures (could indicate stale clients/forms).
+- Watch for unexpected URL validation rejections on legitimate public links.
+
+### Rollback
+
+1. If route-method changes break clients:
+- Roll back the route-method/template commit(s) first (`/mark/delete`, `/mark/inc`), then redeploy.
+- Re-run `tests/test_mark_mutation_security.py` to confirm restored behavior.
+2. If security controls block legitimate behavior:
+- Roll back the specific control commit(s) (HTML sanitization, URL target validation, or config guard) instead of full rollback.
+- Re-run the matching regression tests before redeploying:
+```bash
+pytest tests/test_stored_xss_regression.py tests/test_fetch_path_url_targets.py tests/test_config_and_import_status_isolation.py
+```
+3. Post-rollback validation:
+- Smoke-test add/edit/delete/click flows in UI.
+- Confirm app startup and login succeed in the target environment.
+
 ## Docker Commands
 
 ```bash
