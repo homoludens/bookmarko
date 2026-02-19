@@ -186,7 +186,20 @@ class User(UserMixin, db.Model):
         Returns:
             True if password matches, False otherwise
         """
-        return bcrypt.check_password_hash(self.password, password)
+        pw_hash = self.password
+        if isinstance(pw_hash, str):
+            # Handle legacy storage that saved a bytes repr, e.g. "b'$2b$12$...'"
+            if (pw_hash.startswith("b'") and pw_hash.endswith("'")) or (
+                pw_hash.startswith('b"') and pw_hash.endswith('"')
+            ):
+                candidate = pw_hash[2:-1]
+                if candidate.startswith("$2"):
+                    pw_hash = candidate
+        try:
+            return bcrypt.check_password_hash(pw_hash, password)
+        except ValueError:
+            # Invalid salt / corrupted hash should not crash login
+            return False
 
     def __repr__(self) -> str:
         return f'<User {self.username!r}>'

@@ -70,3 +70,11 @@ CLAUDE*.txt
 *.log
 *.mp4
 flaskmarks/files/*.*
+AI-grep/
+SEARCH/
+cache
+.claude
+.env
+.locks
+.searchignore
+*.sql
