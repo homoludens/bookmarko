@@ -26,7 +26,15 @@
                 <div class="p-3">
                     {% include "flash.html" %}
                     <div class="full_html" style="background: white; padding: 15px; border-radius: 3px;">
-                        {{ mark.full_html|safe }}
+                        <iframe
+                            class="full_html_frame"
+                            title="Rendered imported HTML for {{ mark.title|e }}"
+                            srcdoc="{{ mark.full_html|e }}"
+                            sandbox=""
+                            referrerpolicy="no-referrer"
+                            loading="lazy"
+                            style="width: 100%; min-height: 70vh; border: 1px solid #dee2e6; background: #fff;"
+                        ></iframe>
                     </div>
                 </div>
             </div>
