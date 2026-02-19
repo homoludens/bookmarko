@@ -1,7 +1,7 @@
 ## 1. Mark Creation And Mutation Safety
 
 - [ ] 1.1 Refactor `new_mark` flow to use a single ORM object path and one commit for successful requests. `Complexity: Low`
-- [ ] 1.2 Add request-path tests for mark creation with title and without optional fields to prevent regression. `Complexity: Low`
+- [x] 1.2 Add request-path tests for mark creation with title and without optional fields to prevent regression. `Complexity: Low`
 - [ ] 1.3 Convert state-changing mark routes from GET to POST/DELETE handlers and update route wiring. `Complexity: Middle`
 - [ ] 1.4 Update templates/forms for mutation endpoints to submit CSRF-protected requests. `Complexity: Low`
 - [ ] 1.5 Add regression tests proving GET mutation requests are rejected and CSRF validation is enforced. `Complexity: Middle`
