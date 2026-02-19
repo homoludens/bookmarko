@@ -12,7 +12,7 @@
 - [x] 2.2 Update HTML display templates to ensure unsafe markup is never executed in user context. `Complexity: Middle`
 - [x] 2.3 Implement URL scheme and resolved-address validation to allow only public `http/https` targets. `Complexity: High`
 - [ ] 2.4 Add fetch-path tests for blocked loopback/private/link-local targets and allowed public targets. `Complexity: Middle`
-- [ ] 2.5 Add security regression tests for stored XSS neutralization behavior. `Complexity: Middle`
+- [x] 2.5 Add security regression tests for stored XSS neutralization behavior. `Complexity: Middle`
 
 ## 3. Configuration And Import Status Isolation
 
