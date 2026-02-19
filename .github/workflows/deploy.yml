@@ -1,0 +1,12 @@
+name: Deploy to exe.dev
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Deploy
+        run: /home/exedev/candle_annotator/deploy_zero_downtime.sh
