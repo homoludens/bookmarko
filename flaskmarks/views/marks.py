@@ -13,7 +13,8 @@ from flask import (
     abort,
     jsonify,
     json,
-    current_app
+    current_app,
+    session,
 )
 from flask_login import login_user, logout_user, login_required
 from werkzeug.utils import secure_filename
@@ -30,10 +31,17 @@ from newspaper import Article, ArticleBinaryDataException
 from werkzeug.utils import secure_filename
 from bs4 import BeautifulSoup
 from typing import List
+from uuid import uuid4
 
 from ..core.setup import app, db
 from ..core.error import is_safe_url
 from ..core.html_sanitizer import sanitize_external_html
+from ..core.import_job_status_service import (
+    complete_import_job,
+    create_or_reset_import_job,
+    get_import_job_status,
+    increment_import_job_status,
+)
 from ..core.marks_import_thread import MarksImportThread
 from ..core.theme_utils import render_themed_template
 
@@ -66,10 +74,6 @@ from sqlalchemy import func
 # Suppress warning
 # https://github.com/mengzhuo/sqlalchemy-fulltext-search/issues/21
 # FullTextSearch.inherit_cache = False
-
-status = 0
-total_lines = 0
-import_complete = False
 
 pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
@@ -492,14 +496,13 @@ def flatten(items):
 ###################
 
 
-def thread_import_file(text_file_path: str|List[str], app, user_id: int):
+def thread_import_file(
+    text_file_path: str | List[str],
+    app,
+    user_id: int,
+    job_id: str | None = None,
+):
     maxthreads = 20
-    global status
-    global total_lines
-    global import_complete
-    
-    status = 0
-    import_complete = False
     lines_new = []
 
     if isinstance(text_file_path, str):
@@ -513,25 +516,28 @@ def thread_import_file(text_file_path: str|List[str], app, user_id: int):
     else:
         raise TypeError("text_file_path must be a string or a list of strings")
 
-    if not lines_new:
-        import_complete = True
-        return
+    with app.app_context():
+        create_or_reset_import_job(user_id=user_id, job_id=job_id, total_lines=total_lines)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=maxthreads) as exe:
-        futures = []
-        for url in lines_new:
-            future = exe.submit(marks_import_threads, (url, user_id))
-            futures.append(future)
-        
-        # Wait for each future and update status
-        for future in concurrent.futures.as_completed(futures):
-            status += 1
-            try:
-                future.result()
-            except Exception as e:
-                print(f"Import error: {e}")
-    
-    import_complete = True
+        if not lines_new:
+            complete_import_job(user_id=user_id, job_id=job_id)
+            return
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=maxthreads) as exe:
+            futures = []
+            for url in lines_new:
+                future = exe.submit(marks_import_threads, (url, user_id))
+                futures.append(future)
+
+            # Wait for each future and update scoped persisted status
+            for future in concurrent.futures.as_completed(futures):
+                increment_import_job_status(user_id=user_id, job_id=job_id)
+                try:
+                    future.result()
+                except Exception as e:
+                    print(f"Import error: {e}")
+
+        complete_import_job(user_id=user_id, job_id=job_id)
 
 
 def marks_import_threads(url_user_id):
@@ -544,10 +550,6 @@ def marks_import_threads(url_user_id):
 @marks.route('/marks/import', methods=['GET', 'POST'])
 @login_required
 def import_marks():
-    global status
-    global total_lines
-    global import_complete
-
     app.logger.info('Processing default request')
     u = g.user
     form = MarksImportForm(obj=u)
@@ -562,11 +564,6 @@ def import_marks():
         
         file_path = os.path.join(files_dir, filename)
         f.save(file_path)
-
-        # Reset status for new import
-        status = 0
-        total_lines = 0
-        import_complete = False
 
         if f.content_type == 'text/plain':
             app.logger.info(f"content_type: {f.content_type}")
@@ -596,27 +593,36 @@ def import_marks():
             flash('No URLs found in the uploaded file.', category='warning')
             return render_template('profile/import_progress.html', form=form, status=0)
 
-        t1 = Thread(target=thread_import_file, args=(import_data, current_app._get_current_object(), u.id))
+        job_id = uuid4().hex
+        session['latest_import_job_id'] = job_id
+        create_or_reset_import_job(user_id=u.id, job_id=job_id, total_lines=total_lines)
+
+        t1 = Thread(
+            target=thread_import_file,
+            args=(import_data, current_app._get_current_object(), u.id, job_id),
+        )
         t1.start()
 
         return render_template('profile/import_progress.html', total_lines=total_lines, status=1)
 
-    status = 0
-    import_complete = False
     return render_template('profile/import_progress.html', form=form, status=0)
 
-# TODO: make this multiuser friendly
 @marks.route('/marks/import/status', methods=['GET', 'POST'])
 @login_required
 def getStatus():
-    global status
-    global total_lines
-    global import_complete
-    statusList = {
-        'status': status,
-        'total_lines': total_lines,
-        'complete': import_complete
-    }
+    job_id = request.args.get('job_id') or session.get('latest_import_job_id')
+    scoped_status = get_import_job_status(user_id=g.user.id, job_id=job_id)
+    if scoped_status is None:
+        scoped_status = get_import_job_status(user_id=g.user.id)
+
+    if scoped_status is None:
+        statusList = {
+            'status': 0,
+            'total_lines': 0,
+            'complete': False,
+        }
+    else:
+        statusList = scoped_status.as_dict()
     return json.dumps(statusList)
 
 #########
