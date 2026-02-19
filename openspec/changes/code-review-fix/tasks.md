@@ -20,7 +20,7 @@
 - [x] 3.2 Ensure production debug defaults are disabled unless explicitly enabled in a safe context. `Complexity: Low`
 - [x] 3.3 Introduce user/job-scoped import status persistence to replace global mutable status state. `Complexity: High`
 - [x] 3.4 Update import status endpoints/handlers to require scope context and prevent cross-user leakage. `Complexity: Middle`
-- [ ] 3.5 Add tests covering startup config validation failures and concurrent import status isolation. `Complexity: Middle`
+- [x] 3.5 Add tests covering startup config validation failures and concurrent import status isolation. `Complexity: Middle`
 
 ## 4. Query Performance And Ordering Correctness
 
