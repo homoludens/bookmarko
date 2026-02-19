@@ -129,7 +129,7 @@ def register():
     if form.validate_on_submit():
         u = User()
         form.populate_obj(u)
-        u.password = bcrypt.generate_password_hash(form.password.data)
+        u.password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
         try:
             db.session.add(u)
             db.session.commit()
