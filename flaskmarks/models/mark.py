@@ -9,7 +9,7 @@ from typing import Any
 from sqlalchemy import event, Column, Text, Computed
 from sqlalchemy.sql import func
 # from sqlalchemy.dialects.mysql import LONGTEXT
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from pgvector.sqlalchemy import Vector
 # from sqlalchemy_fulltext import FullText
@@ -75,6 +75,7 @@ class Mark(db.Model):
 
     valid_types = ['bookmark', 'feed', 'youtube']
     valid_feed_types = ['feed', 'youtube']
+    max_title_length = 255
 
     def __init__(self, owner_id: int, created: dt | None = None) -> None:
         """
@@ -122,6 +123,18 @@ class Mark(db.Model):
 
     def __repr__(self) -> str:
         return f'<Mark {self.title!r}>'
+
+    @staticmethod
+    def clamp_title_length(value: Any) -> str | None:
+        """Ensure titles always fit in the DB column constraint."""
+        if value is None:
+            return None
+        return str(value)[:Mark.max_title_length]
+
+    @validates('title')
+    def validate_title_length(self, key: str, value: Any) -> str | None:
+        """Clamp title before any insert/update so DB writes cannot overflow."""
+        return self.clamp_title_length(value)
 
     def get_embedding_text(self) -> str:
         """

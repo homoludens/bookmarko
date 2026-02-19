@@ -2,6 +2,11 @@ Flaskmarks
 ===============
 Simple (and self educational) [Flask](http://flask.pocoo.org/) & [SQLAlchemy](http://www.sqlalchemy.org/) based bookmark and RSS feed app.
 
+Recent Technical Changes
+========================
+- `Mark.title` is now clamped to 255 characters at the model layer before database writes.
+- This prevents PostgreSQL errors like `value too long for type character varying(255)` across API, quickadd async metadata updates, imports, and UI edits.
+
 Features
 ========
 "Flaskmarks" is a bookmark managing application. Its purpose is to be a all-in-one bookmark and RSS feed repository. Storing all bookmarks and RSS feeds in one place and make them accessible from all platforms and devices. This is by no means an original idea, but this is an interpretation of the problem.
@@ -62,7 +67,8 @@ GROQ_API_KEY=your-groq-api-key
 Generate a bcrypt password hash (useful for manual database updates):
 
 ```bash
-python -c "from flaskmarks import create_app; from flaskmarks.core.extensions import bcrypt; app=create_app(); with app.app_context(): print(bcrypt.generate_password_hash('YOUR_PASSWORD').decode('utf-8'))"
+python -c "from flaskmarks import create_app; from flaskmarks.core.extensions import bcrypt; app=create_app(); ctx=app.app_context(); ctx.push(); print(bcrypt.generate_password_hash('YOUR_PASSWORD').decode('utf-8')); ctx.pop()"
+
 ```
 
 ## Development with Docker
