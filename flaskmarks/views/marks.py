@@ -15,6 +15,7 @@ from flask import (
     current_app,
 )
 from flask_login import login_user, logout_user, login_required
+from flask_wtf.csrf import validate_csrf
 from werkzeug.utils import secure_filename
 import os
 # from bs4 import BeautifulSoup as BSoup
@@ -129,7 +130,12 @@ def extract_urls_from_bookmarks(file_path: str) -> List[str]:
 
 
 LOG_DIR = os.environ.get('FLASKMARKS_LOG_DIR', '/app/logs')
-os.makedirs(LOG_DIR, exist_ok=True)
+try:
+    os.makedirs(LOG_DIR, exist_ok=True)
+except PermissionError:
+    # Fall back to a repo-local path in restricted environments (e.g. tests/sandbox).
+    LOG_DIR = os.path.join(os.getcwd(), 'logs')
+    os.makedirs(LOG_DIR, exist_ok=True)
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -372,6 +378,12 @@ def view_html_mark(id):
 @marks.route('/mark/delete/<int:id>', methods=['POST', 'DELETE'])
 @login_required
 def delete_mark(id):
+    if current_app.config.get("WTF_CSRF_ENABLED", True):
+        try:
+            validate_csrf(request.form.get("csrf_token"))
+        except Exception:
+            abort(400)
+
     m = g.user.get_mark_by_id(id)
     if m:
         db.session.delete(m)
@@ -389,6 +401,12 @@ def delete_mark(id):
 @marks.route('/mark/inc', methods=['POST'])
 @login_required
 def ajax_mark_inc():
+    if current_app.config.get("WTF_CSRF_ENABLED", True):
+        try:
+            validate_csrf(request.form.get("csrf_token"))
+        except Exception:
+            abort(400)
+
     mark_id = request.form.get('id')
     if not mark_id and request.is_json:
         payload = request.get_json(silent=True) or {}

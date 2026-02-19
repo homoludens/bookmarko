@@ -38,7 +38,8 @@ class TagListField(StringField):
             tag_keys = {}
             form_tags = valuelist[0].strip().replace(',', ' ').split(' ')
             for t in form_tags:
-                tag_keys[t] = 1
+                if t:
+                    tag_keys[t] = 1
             for t in tag_keys.keys():
                 tag = Tag.check(t.lower())
                 if not tag:

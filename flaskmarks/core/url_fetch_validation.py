@@ -18,10 +18,10 @@ def _ip_rejection_reason(ip: IPAddress) -> str | None:
     """Return a reason when IP is not publicly routable."""
     if ip.is_loopback:
         return "loopback"
-    if ip.is_private:
-        return "private"
     if ip.is_link_local:
         return "link-local"
+    if ip.is_private:
+        return "private"
     if ip.is_multicast:
         return "multicast"
     if ip.is_unspecified:
