@@ -45,37 +45,55 @@ def list_tags():
     per_page = min(request.args.get('per_page', 50, type=int), 100)
     sort = request.args.get('sort', 'title')
 
-    # Get tags with mark count for this user
-    query = user.my_tags()
-
-    if sort == 'title':
-        query = query.order_by(Tag.title)
-
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-
-    tag_ids = [tag.id for tag in pagination.items]
-    tag_counts = {}
-    if tag_ids:
-        count_rows = (
-            db.session.query(Tag.id, func.count(Mark.id))
+    tags_data = []
+    if sort == 'count':
+        count_subquery = (
+            db.session.query(
+                Tag.id.label('tag_id'),
+                func.count(Mark.id).label('mark_count')
+            )
             .select_from(Tag)
             .join(Tag.marks)
-            .filter(Mark.owner_id == user.id, Tag.id.in_(tag_ids))
+            .filter(Mark.owner_id == user.id)
             .group_by(Tag.id)
-            .all()
+            .subquery()
         )
-        tag_counts = {tag_id: count for tag_id, count in count_rows}
+        pagination = (
+            user.my_tags()
+            .join(count_subquery, Tag.id == count_subquery.c.tag_id)
+            .add_columns(count_subquery.c.mark_count)
+            .order_by(count_subquery.c.mark_count.desc(), Tag.title.asc())
+            .paginate(page=page, per_page=per_page, error_out=False)
+        )
+        for tag, count in pagination.items:
+            tag_dict = serialize_tag(tag)
+            tag_dict['count'] = count
+            tags_data.append(tag_dict)
+    else:
+        # Keep title-sorted behavior and compute counts in one grouped query.
+        query = user.my_tags()
+        if sort == 'title':
+            query = query.order_by(Tag.title)
 
-    # Serialize tags with precomputed count
-    tags_data = []
-    for tag in pagination.items:
-        tag_dict = serialize_tag(tag)
-        tag_dict['count'] = tag_counts.get(tag.id, 0)
-        tags_data.append(tag_dict)
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
-    # Sort by count if requested (post-query sort since count is computed)
-    if sort == 'count':
-        tags_data.sort(key=lambda x: x['count'], reverse=True)
+        tag_ids = [tag.id for tag in pagination.items]
+        tag_counts = {}
+        if tag_ids:
+            count_rows = (
+                db.session.query(Tag.id, func.count(Mark.id))
+                .select_from(Tag)
+                .join(Tag.marks)
+                .filter(Mark.owner_id == user.id, Tag.id.in_(tag_ids))
+                .group_by(Tag.id)
+                .all()
+            )
+            tag_counts = {tag_id: count for tag_id, count in count_rows}
+
+        for tag in pagination.items:
+            tag_dict = serialize_tag(tag)
+            tag_dict['count'] = tag_counts.get(tag.id, 0)
+            tags_data.append(tag_dict)
 
     return api_response({
         'tags': tags_data,
