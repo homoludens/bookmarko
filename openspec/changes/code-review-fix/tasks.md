@@ -24,7 +24,7 @@
 
 ## 4. Query Performance And Ordering Correctness
 
-- [ ] 4.1 Replace tag count N+1 queries with grouped SQL aggregation query logic. `Complexity: Middle`
+- [x] 4.1 Replace tag count N+1 queries with grouped SQL aggregation query logic. `Complexity: Middle`
 - [ ] 4.2 Apply count-based ordering in SQL before pagination boundaries are computed. `Complexity: Middle`
 - [ ] 4.3 Validate query behavior against representative data and adjust indexes if needed. `Complexity: Middle`
 - [ ] 4.4 Add tests that verify global count ordering across paginated results. `Complexity: Low`

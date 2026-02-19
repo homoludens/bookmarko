@@ -4,6 +4,7 @@ Tag management API endpoints.
 from __future__ import annotations
 
 from flask import request, g
+from sqlalchemy import func
 
 from flaskmarks.core.extensions import db
 from flaskmarks.models.tag import Tag
@@ -52,16 +53,24 @@ def list_tags():
 
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
-    # Serialize tags with count
+    tag_ids = [tag.id for tag in pagination.items]
+    tag_counts = {}
+    if tag_ids:
+        count_rows = (
+            db.session.query(Tag.id, func.count(Mark.id))
+            .select_from(Tag)
+            .join(Tag.marks)
+            .filter(Mark.owner_id == user.id, Tag.id.in_(tag_ids))
+            .group_by(Tag.id)
+            .all()
+        )
+        tag_counts = {tag_id: count for tag_id, count in count_rows}
+
+    # Serialize tags with precomputed count
     tags_data = []
     for tag in pagination.items:
         tag_dict = serialize_tag(tag)
-        # Count marks with this tag for this user
-        tag_dict['count'] = (
-            user.my_marks()
-            .filter(Mark.tags.any(id=tag.id))
-            .count()
-        )
+        tag_dict['count'] = tag_counts.get(tag.id, 0)
         tags_data.append(tag_dict)
 
     # Sort by count if requested (post-query sort since count is computed)
@@ -269,20 +278,20 @@ def get_tag_cloud():
     """
     user = g.api_user
 
-    all_tags = user.all_tags()
+    count_rows = (
+        db.session.query(Tag.id, Tag.title, func.count(Mark.id).label('count'))
+        .select_from(Tag)
+        .join(Tag.marks)
+        .filter(Mark.owner_id == user.id)
+        .group_by(Tag.id, Tag.title)
+        .order_by(func.count(Mark.id).desc())
+        .all()
+    )
 
-    tags_data = []
-    for tag in all_tags:
-        count = user.my_marks().filter(Mark.tags.any(id=tag.id)).count()
-        if count > 0:
-            tags_data.append({
-                'id': tag.id,
-                'title': tag.title,
-                'count': count
-            })
-
-    # Sort by count descending
-    tags_data.sort(key=lambda x: x['count'], reverse=True)
+    tags_data = [
+        {'id': tag_id, 'title': title, 'count': count}
+        for tag_id, title, count in count_rows
+    ]
 
     return api_response({
         'tags': tags_data,
