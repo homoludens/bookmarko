@@ -35,6 +35,17 @@
     </form>
     {% endif %}
 
+    {% if g.user and g.user.is_authenticated and g.user.id != profile_user.id %}
+    <form method="POST" action="{{ url_for('federation.follow_remote', username=profile_user.username) }}" style="margin-top: 10px;">
+      <label>
+        Follow remote user:
+        <input type="text" name="handle" placeholder="@user@domain" required
+               style="width: 200px; padding: 4px;">
+      </label>
+      <button type="submit" style="padding: 4px 12px;">Follow</button>
+    </form>
+    {% endif %}
+
     {% if g.user.is_authenticated and g.user.id == profile_user.id %}
     <p class="text-muted">
         <a href="{{ url_for('profile.userprofile') }}">Edit your profile</a>
