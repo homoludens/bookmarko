@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" role="main">
+    {% include "flash.html" %}
+
+    <div class="page-header">
+        <h2>{{ profile_user.username }}
+            {% if profile_user.actor_id %}
+            <small class="text-muted">@{{ profile_user.username }}</small>
+            {% endif %}
+        </h2>
+    </div>
+
+    <ul class="infolist list-group">
+        <li class="list-group-item">
+            <strong>Public marks:</strong> {{ public_marks_count }}
+        </li>
+        <li class="list-group-item">
+            <strong>Followers:</strong> {{ followers_count }}
+        </li>
+        <li class="list-group-item">
+            <strong>Following:</strong> {{ following_count }}
+        </li>
+    </ul>
+
+    {% if g.user.is_authenticated and g.user.id != profile_user.id %}
+    <form action="{{ url_for('federation.toggle_follow', username=profile_user.username) }}" method="POST" style="display:inline;">
+        <button type="submit" class="btn {% if is_following %}btn-danger{% else %}btn-primary{% endif %}">
+            {% if is_following %}
+            <i class="bi bi-person-dash"></i> Unfollow
+            {% else %}
+            <i class="bi bi-person-plus"></i> Follow
+            {% endif %}
+        </button>
+    </form>
+    {% endif %}
+
+    {% if g.user.is_authenticated and g.user.id == profile_user.id %}
+    <p class="text-muted">
+        <a href="{{ url_for('profile.userprofile') }}">Edit your profile</a>
+    </p>
+    {% endif %}
+
+</div>
+{% endblock %}
