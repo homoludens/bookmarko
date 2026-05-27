@@ -39,6 +39,7 @@ gensim>=4.3.0
 # Utilities
 webhelpers2>=2.0
 blinker>=1.7.0
+cryptography
 
 # Task queue (optional)
 celery>=5.3.0
