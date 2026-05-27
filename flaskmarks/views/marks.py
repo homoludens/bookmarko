@@ -58,6 +58,7 @@ from ..models.tag import Tag
 
 import logging
 import sys
+import json
 from urllib.parse import urlparse
 
 from threading import Thread
@@ -298,6 +299,23 @@ def new_mark(type):
 
         db.session.add(m)
         db.session.commit()
+
+        # Create ActivityPub Create activity for public bookmarks
+        if m.visibility == 'public' and u.actor_id:
+            from flaskmarks.models import Activity
+            activity = Activity(
+                actor_id=u.id,
+                activity_type='Create',
+                object_json=json.dumps({
+                    'type': 'Article',
+                    'id': f"{request.host_url.rstrip('/')}/api/v1/activitypub/objects/{m.id}",
+                    'name': m.title,
+                }),
+                object_id=f"{request.host_url.rstrip('/')}/api/v1/activitypub/objects/{m.id}",
+            )
+            db.session.add(activity)
+            db.session.commit()
+
         flash('New %s: "%s", added.' % (type, m.title), category='success')
         return redirect(url_for('marks.allmarks'))
     """
@@ -390,6 +408,22 @@ def delete_mark(id):
 
     m = g.user.get_mark_by_id(id)
     if m:
+        # Create ActivityPub Delete activity for public bookmarks
+        if m.visibility == 'public' and g.user.actor_id:
+            from flaskmarks.models import Activity
+            activity = Activity(
+                actor_id=g.user.id,
+                activity_type='Delete',
+                object_json=json.dumps({
+                    'type': 'Article',
+                    'id': f"{request.host_url.rstrip('/')}/api/v1/activitypub/objects/{m.id}",
+                    'name': m.title,
+                }),
+                object_id=f"{request.host_url.rstrip('/')}/api/v1/activitypub/objects/{m.id}",
+            )
+            db.session.add(activity)
+            db.session.commit()
+
         db.session.delete(m)
         db.session.commit()
         flash('Mark "%s" deleted.' % (m.title), category='info')
