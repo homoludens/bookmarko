@@ -110,4 +110,10 @@ def create_app(config_object: str = "config") -> Flask:
 
 # Create default app instance for backwards compatibility
 # This allows imports like: from flaskmarks import app
-app = create_app()
+try:
+    app = create_app()
+except Exception:
+    import warnings
+    warnings.warn("Could not create default app instance. "
+                   "Call create_app() explicitly when needed.")
+    app = None

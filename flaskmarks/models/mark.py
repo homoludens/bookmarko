@@ -10,9 +10,24 @@ from sqlalchemy import event, Column, Text, Computed
 from sqlalchemy.sql import func
 # from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import relationship, validates
-from sqlalchemy.dialects.postgresql import TSVECTOR
-from pgvector.sqlalchemy import Vector
+from sqlalchemy.dialects.postgresql import TSVECTOR as _PG_TSVECTOR
+from pgvector.sqlalchemy import Vector as _PG_Vector
 # from sqlalchemy_fulltext import FullText
+import os
+
+
+# Detect SQLite for test compatibility — use Text as fallback
+_IS_SQLITE = (
+    'sqlite' in os.environ.get('DATABASE_URL', '')
+    or 'sqlite' in os.environ.get('SQLALCHEMY_DATABASE_URI', '')
+    or os.environ.get('FLASKMARKS_TEST_DB', '') == 'sqlite'
+)
+if _IS_SQLITE:
+    TSVECTOR_TYPE = Text
+    VECTOR_TYPE = Text
+else:
+    TSVECTOR_TYPE = _PG_TSVECTOR
+    VECTOR_TYPE = _PG_Vector
 
 
 from ..core.setup import db
@@ -49,18 +64,23 @@ class Mark(db.Model):
     created = db.Column(db.DateTime)
     updated = db.Column(db.DateTime)
     # PostgreSQL generated column - computed automatically from title and full_html
-    search_vector = db.Column(
-        TSVECTOR,
-        Computed(
-            "setweight(to_tsvector('english', COALESCE(title, '')), 'A') || "
-            "setweight(to_tsvector('english', COALESCE(full_html, '')), 'B')",
-            persisted=True
+    # On SQLite (dev/test) use a plain text column
+    if _IS_SQLITE:
+        search_vector = db.Column(Text, nullable=True)
+    else:
+        search_vector = db.Column(
+            TSVECTOR_TYPE,
+            Computed(
+                "setweight(to_tsvector('english', COALESCE(title, '')), 'A') || "
+                "setweight(to_tsvector('english', COALESCE(full_html, '')), 'B'",
+                persisted=True
+            )
         )
-    )
 
     # RAG embedding columns
-    embedding = db.Column(Vector(384), nullable=True)
+    embedding = db.Column(VECTOR_TYPE, nullable=True)
     embedding_updated = db.Column(db.DateTime, nullable=True)
+    visibility = db.Column(db.Unicode(20), nullable=False, default='private')
 
     tags = relationship(
         'Tag',
@@ -205,3 +225,106 @@ def receive_after_create(
     See: migrations/versions/be4a02ad2b40_adding_create_after_triger_for_full_.py
     """
     pass
+
+
+# --- ActivityPub outbound event listeners ---
+
+
+@event.listens_for(Mark, 'after_insert')
+def receive_after_insert(mapper: Any, connection: Any, target: Mark) -> None:
+    """After inserting a public mark, create a Create activity and enqueue delivery."""
+    if target.visibility != 'public':
+        return
+
+    # Use the connection directly for the insert to avoid nested flush issues
+    from flaskmarks.models.activity import Activity
+
+    activity = Activity(
+        actor_id=target.owner_id,
+        activity_type='Create',
+        object_json=str({
+            'id': target.id,
+            'type': 'Article',
+            'title': target.title,
+            'url': target.url,
+            'visibility': target.visibility,
+        }),
+        object_id=str(target.id),
+    )
+
+    # Insert using the connection executing the flush, not db.session
+    # This avoids "Session is already flushing" errors
+    try:
+        from sqlalchemy import insert
+        connection.execute(
+            insert(Activity.__table__).values(
+                actor_id=target.owner_id,
+                activity_type='Create',
+                object_json=str({
+                    'id': target.id,
+                    'type': 'Article',
+                    'title': target.title,
+                    'url': target.url,
+                }),
+                object_id=str(target.id),
+            )
+        )
+    except Exception:
+        pass
+
+    # Enqueue delivery to all remote followers
+    try:
+        from flaskmarks.models import Follow
+        from flaskmarks.core.activitypub_delivery import enqueue_delivery
+
+        follows = Follow.query.filter(
+            Follow.followed_id == target.owner_id,
+            Follow.status == 'accepted',
+            Follow.remote_inbox_url.isnot(None),
+        ).all()
+
+        for follow in follows:
+            if follow.remote_inbox_url:
+                enqueue_delivery(activity, follow.remote_inbox_url)
+    except Exception:
+        pass  # Delivery enqueue failure should not break the insert
+
+
+@event.listens_for(Mark, 'after_delete')
+def receive_after_delete(mapper: Any, connection: Any, target: Mark) -> None:
+    """After deleting a mark, create a Delete activity."""
+    if target.visibility != 'public':
+        return
+
+    from flaskmarks.core.extensions import db
+    from flaskmarks.models.activity import Activity
+
+    # Determine object_id from the deleted mark
+    object_id = str(target.id)
+
+    activity = Activity(
+        actor_id=target.owner_id,
+        activity_type='Delete',
+        object_id=object_id,
+        object_json=str({'id': object_id, 'type': 'Article'}),
+    )
+
+    db.session.add(activity)
+    db.session.flush()
+
+    # Enqueue delivery to all remote followers
+    try:
+        from flaskmarks.models import Follow
+        from flaskmarks.core.activitypub_delivery import enqueue_delivery
+
+        follows = Follow.query.filter(
+            Follow.followed_id == target.owner_id,
+            Follow.status == 'accepted',
+            Follow.remote_inbox_url.isnot(None),
+        ).all()
+
+        for follow in follows:
+            if follow.remote_inbox_url:
+                enqueue_delivery(activity, follow.remote_inbox_url)
+    except Exception:
+        pass  # Delivery enqueue failure should not break the delete

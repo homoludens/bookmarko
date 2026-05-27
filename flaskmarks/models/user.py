@@ -35,6 +35,16 @@ class User(UserMixin, db.Model):
     sort_type = db.Column(db.Unicode(255), default='clicks')
     theme = db.Column(db.Unicode(50), default='default')
 
+    # ActivityPub federation columns
+    actor_id = db.Column(db.Unicode(512), nullable=True)
+    private_key_pem = db.Column(db.Text, nullable=True)
+    public_key_pem = db.Column(db.Text, nullable=True)
+    inbox_url = db.Column(db.Unicode(512), nullable=True)
+    outbox_url = db.Column(db.Unicode(512), nullable=True)
+    followers_url = db.Column(db.Unicode(512), nullable=True)
+    following_url = db.Column(db.Unicode(512), nullable=True)
+    default_bookmark_visibility = db.Column(db.Unicode(20), nullable=False, default='private')
+
     marks_rel = db.relationship('Mark', backref='owner', lazy='dynamic')
 
     @classmethod
@@ -56,6 +66,14 @@ class User(UserMixin, db.Model):
         """Get query for all marks owned by this user."""
         from flaskmarks.models.mark import Mark
         return Mark.query.filter(Mark.owner_id == self.id)
+
+    def visible_marks(self, viewer_id: int | None = None):
+        """Get marks visible to a given viewer (owner sees all, others see only public)."""
+        from flaskmarks.models.mark import Mark
+        base = Mark.query.filter(Mark.owner_id == self.id)
+        if viewer_id == self.id:
+            return base
+        return base.filter(Mark.visibility == 'public')
 
     def my_tags(self):
         """Get query for all tags used by this user's marks."""
