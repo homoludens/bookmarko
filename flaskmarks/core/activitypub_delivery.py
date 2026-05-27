@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 import requests
 
 from flaskmarks.core.extensions import db
+from flaskmarks.core.http_signatures import sign_headers
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -108,7 +109,7 @@ def _attempt_delivery(delivery) -> bool:
 
     Returns True if delivery succeeded, False otherwise.
     """
-    from flaskmarks.models import DeliveryQueue, Activity as ActivityModel
+    from flaskmarks.models import DeliveryQueue, Activity as ActivityModel, User
 
     activity = ActivityModel.query.get(delivery.activity_id)
     if not activity:
@@ -124,13 +125,30 @@ def _attempt_delivery(delivery) -> bool:
     # Enforce rate limiting
     _rate_limit_domain(domain)
 
+    # Get the sender's private key for HTTP Signatures
+    sender = User.query.get(activity.actor_id) if activity.actor_id else None
+
+    headers = {
+        'Content-Type': 'application/activity+json',
+    }
+
+    if sender and sender.private_key_pem:
+        from urllib.parse import urlparse
+        parsed = urlparse(delivery.inbox_url)
+        sig_headers = sign_headers(
+            private_key_pem=sender.private_key_pem,
+            key_id=f'{sender.actor_id}#main-key',
+            method='POST',
+            path=parsed.path,
+            host=parsed.netloc,
+        )
+        headers.update(sig_headers)
+
     try:
         resp = requests.post(
             delivery.inbox_url,
             data=json.dumps(payload),
-            headers={
-                'Content-Type': 'application/activity+json',
-            },
+            headers=headers,
             timeout=30,
         )
 

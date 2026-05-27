@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from flask import Blueprint, jsonify, request, abort
 from flaskmarks.models import User
+from flaskmarks.core.http_signatures import verify_signature
 
 activitypub = Blueprint('activitypub', __name__)
 
@@ -153,8 +154,71 @@ def _dispatch_activity(data):
 
 @activitypub.route('/api/v1/activitypub/inbox', methods=['POST'])
 def shared_inbox():
-    """Shared inbox -- accept incoming ActivityPub activities for any local actor."""
+    """Shared inbox -- accept incoming ActivityPub activities for any local actor.
+
+    Verifies HTTP Signatures on incoming requests to authenticate the
+    sender, then dispatches the activity to the appropriate handler.
+    """
+    # Validate JSON body first
     data = _validate_activity_body()
+
+    # Parse and verify HTTP Signature
+    sig_header = request.headers.get('Signature', '')
+    if sig_header:
+        import re
+        # Extract keyId and signature from the Signature header
+        key_id_match = re.search(r'keyId="([^"]+)"', sig_header)
+        sig_match = re.search(r'signature="([^"]+)"', sig_header)
+        headers_match = re.search(r'headers="([^"]*)"', sig_header)
+
+        if key_id_match and sig_match:
+            key_id = key_id_match.group(1)
+            signature_b64 = sig_match.group(1)
+            # Default to required headers if not specified
+            signed_headers = headers_match.group(1) if headers_match else '(request-target) host date'
+
+            # Fetch the remote actor's public key from the keyId URL
+            # Strip the fragment (#main-key) to get the actor document URL
+            actor_url = key_id.split('#')[0]
+            try:
+                import requests as http_req
+                actor_resp = http_req.get(
+                    actor_url,
+                    headers={'Accept': 'application/activity+json'},
+                    timeout=15,
+                )
+                if actor_resp.status_code == 200:
+                    actor_doc = actor_resp.json()
+                    public_key_pem = None
+                    # Extract publicKeyPem from the actor document
+                    pubkey = actor_doc.get('publicKey', {})
+                    if isinstance(pubkey, dict):
+                        public_key_pem = pubkey.get('publicKeyPem')
+
+                    if public_key_pem:
+                        # Get the request details for verification
+                        method = request.method.lower()
+                        path = request.path
+                        host = request.headers.get('Host', request.host)
+                        date = request.headers.get('Date', '')
+
+                        valid = verify_signature(
+                            public_key_pem=public_key_pem,
+                            method=method,
+                            path=path,
+                            host=host,
+                            date=date,
+                            signature_b64=signature_b64,
+                        )
+                        if not valid:
+                            return jsonify({'error': 'Invalid HTTP Signature'}), 401
+                    else:
+                        return jsonify({'error': 'No public key found in actor document'}), 401
+                else:
+                    return jsonify({'error': 'Could not fetch actor document'}), 401
+            except Exception as exc:
+                return jsonify({'error': f'Signature verification failed: {str(exc)}'}), 401
+
     body, status = _dispatch_activity(data)
     if body:
         return jsonify(body), status
