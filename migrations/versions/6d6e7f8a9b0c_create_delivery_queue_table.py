@@ -26,8 +26,8 @@ def upgrade():
         sa.Column('retries', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('max_retries', sa.Integer(), nullable=False, server_default='5'),
         sa.Column('last_error', sa.Text(), nullable=True),
-        sa.Column('created', sa.DateTime(), nullable=False, server_default=sa.text('(datetime(\'now\'))')),
-        sa.Column('updated', sa.DateTime(), nullable=False, server_default=sa.text('(datetime(\'now\'))')),
+        sa.Column('created', sa.DateTime(), nullable=False, server_default=sa.text('NOW()')),
+        sa.Column('updated', sa.DateTime(), nullable=False, server_default=sa.text('NOW()')),
         sa.ForeignKeyConstraint(['activity_id'], ['activities.id'], ),
         sa.PrimaryKeyConstraint('id'),
     )
