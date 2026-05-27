@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Federation Status</h2>
+
+<h3>Users</h3>
+<table border="1" cellpadding="8" style="border-collapse: collapse;">
+  <tr><td>Total users</td><td>{{ total_users }}</td></tr>
+  <tr><td>Users with actors</td><td>{{ users_with_actors }}</td></tr>
+</table>
+
+<h3>Follows</h3>
+<table border="1" cellpadding="8" style="border-collapse: collapse;">
+  <tr><td>Accepted follows</td><td>{{ accepted_follows }}</td></tr>
+  <tr><td>Local follows</td><td>{{ local_follows }}</td></tr>
+  <tr><td>Remote follows</td><td>{{ remote_follows }}</td></tr>
+</table>
+
+<h3>Delivery Queue</h3>
+<table border="1" cellpadding="8" style="border-collapse: collapse;">
+  <tr><td>Pending</td><td>{{ pending_deliveries }}</td></tr>
+  <tr><td>Delivered</td><td>{{ delivered_count }}</td></tr>
+  <tr><td>Failed</td><td>{{ failed_deliveries }}</td></tr>
+</table>
+{% endblock %}

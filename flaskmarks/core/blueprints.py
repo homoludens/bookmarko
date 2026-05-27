@@ -25,6 +25,7 @@ def register_blueprints(app: Flask) -> None:
     from flaskmarks.api import api_v1
     from flaskmarks.api.docs import swagger_ui_blueprint, api_spec
     from flaskmarks.api.activitypub import activitypub
+    from flaskmarks.views.admin import admin
 
     app.register_blueprint(profile)
     app.register_blueprint(auth)
@@ -38,3 +39,6 @@ def register_blueprints(app: Flask) -> None:
     # API documentation
     app.register_blueprint(api_spec)
     app.register_blueprint(swagger_ui_blueprint)
+
+    # Admin
+    app.register_blueprint(admin)

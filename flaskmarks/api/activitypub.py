@@ -1,7 +1,7 @@
 """ActivityPub federation endpoints for Flaskmarks."""
 from __future__ import annotations
 
-from flask import Blueprint, jsonify, request, abort
+from flask import Blueprint, current_app, jsonify, request, abort
 from flaskmarks.models import User
 from flaskmarks.core.http_signatures import verify_signature
 
@@ -41,6 +41,7 @@ def _dispatch_activity(data):
         # Verify the local user being followed exists
         obj = data.get('object')
         if not obj:
+            current_app.logger.warning('Follow activity missing object: actor=%s', actor_url)
             return {'error': 'Follow activity must have an object'}, 400
 
         # The object should be an actor ID on this instance
@@ -53,6 +54,7 @@ def _dispatch_activity(data):
                 followed_user = User.query.filter_by(username=match.group(1)).first()
 
         if not followed_user or not followed_user.actor_id:
+            current_app.logger.warning('Follow target not found: object=%s actor=%s', obj, actor_url)
             return {'error': 'Unknown actor to follow'}, 404
 
         # Check if this remote actor already follows this user
@@ -73,6 +75,10 @@ def _dispatch_activity(data):
             )
             db.session.add(follow)
             db.session.commit()
+            current_app.logger.info(
+                'New Follow accepted: remote_actor=%s local_user=%s',
+                actor_url, followed_user.username,
+            )
 
         # Auto-accept: send Accept activity back to the remote actor's inbox
         accept = {
@@ -95,14 +101,22 @@ def _dispatch_activity(data):
             db.session.add(accept_activity)
             db.session.commit()
             enqueue_delivery(accept_activity, None)
-        except Exception:
-            pass  # Queue failure shouldn't break the response
+            current_app.logger.info(
+                'Queued Accept delivery: to=%s for follow=%s',
+                actor_url, actor_url,
+            )
+        except Exception as exc:
+            current_app.logger.warning(
+                'Failed to queue Accept delivery: to=%s error=%s',
+                actor_url, str(exc),
+            )
 
         return None, 202
 
     elif activity_type == 'Undo':
         obj = data.get('object')
         if not obj or not isinstance(obj, dict):
+            current_app.logger.warning('Undo activity missing/invalid object: actor=%s', actor_url)
             return {'error': 'Undo activity must have an object'}, 400
 
         undo_type = obj.get('type')
@@ -126,6 +140,15 @@ def _dispatch_activity(data):
                 if follow:
                     db.session.delete(follow)
                     db.session.commit()
+                    current_app.logger.info(
+                        'Undo Follow: remote_actor=%s local_user=%s',
+                        remote_actor, followed_user.username,
+                    )
+            else:
+                current_app.logger.warning(
+                    'Undo Follow target not found: object=%s actor=%s',
+                    followed_obj, actor_url,
+                )
 
         return None, 202
 
@@ -136,6 +159,7 @@ def _dispatch_activity(data):
             # table since actor_id is a foreign key to local users.
             # Simply acknowledge receipt per ActivityPub spec.
             pass
+        current_app.logger.info('Received Create activity: actor=%s', actor_url)
 
         return None, 202
 
@@ -144,11 +168,13 @@ def _dispatch_activity(data):
         if obj:
             # For remote Delete activities, acknowledge receipt.
             pass
+        current_app.logger.info('Received Delete activity: actor=%s object=%s', actor_url, obj)
 
         return None, 202
 
     else:
         # Unknown type - per ActivityPub spec, return 202 Accepted
+        current_app.logger.info('Received unknown activity type=%s actor=%s', activity_type, actor_url)
         return None, 202
 
 
@@ -220,6 +246,12 @@ def shared_inbox():
                 return jsonify({'error': f'Signature verification failed: {str(exc)}'}), 401
 
     body, status = _dispatch_activity(data)
+    activity_type = data.get('type', 'unknown')
+    actor_url = data.get('actor', 'unknown')
+    current_app.logger.info(
+        'Incoming activity type=%s actor=%s response_status=%d',
+        activity_type, actor_url, status,
+    )
     if body:
         return jsonify(body), status
     return '', 202
@@ -244,7 +276,10 @@ def actor(username: str):
     """Return ActivityPub Actor JSON-LD for a user."""
     user = User.query.filter_by(username=username).first()
     if not user or not user.actor_id:
+        current_app.logger.warning('Actor fetch failed: username=%s not found', username)
         abort(404)
+
+    current_app.logger.info('Actor fetch: username=%s actor_id=%s', username, user.actor_id)
 
     # Build the actor document
     actor_doc = {
@@ -487,10 +522,12 @@ def webfinger():
 
     # Parse acct:username@domain
     if not resource.startswith('acct:'):
+        current_app.logger.warning('WebFinger lookup failed: non-acct resource=%s', resource)
         abort(400, description='Resource must be an acct: URI')
 
     acct = resource[5:]  # strip 'acct:'
     if '@' not in acct:
+        current_app.logger.warning('WebFinger lookup failed: malformed acct URI resource=%s', resource)
         abort(400, description='Invalid acct: URI format')
 
     username, domain = acct.split('@', 1)
@@ -521,6 +558,7 @@ def webfinger():
         ],
     }
 
+    current_app.logger.info('WebFinger lookup: resource=%s actor_id=%s', resource, user.actor_id)
     return jsonify(webfinger_doc)
 
 
@@ -569,4 +607,44 @@ def nodeinfo():
             'localPosts': 0,
         },
         'metadata': {},
+    })
+
+
+@activitypub.route('/api/v1/activitypub/debug')
+def debug_federation():
+    """Debug endpoint returning federation status for manual testing."""
+    from flaskmarks.models import Follow, DeliveryQueue
+    from flaskmarks.core.activitypub_delivery import _domain_last_request
+
+    accepted_follows = Follow.query.filter_by(status='accepted').count()
+    remote_follows = Follow.query.filter(Follow.remote_actor_id.isnot(None)).count()
+    local_follows = Follow.query.filter(Follow.followed_id.isnot(None)).count()
+
+    pending_deliveries = DeliveryQueue.query.filter_by(status='pending').count()
+    failed_deliveries = DeliveryQueue.query.filter_by(status='failed').count()
+    delivered_count = DeliveryQueue.query.filter_by(status='delivered').count()
+
+    return jsonify({
+        'software': 'flaskmarks',
+        'version': '1.0.0',
+        'protocols': ['activitypub'],
+        'stats': {
+            'total_follows': accepted_follows,
+            'local_follows': local_follows,
+            'remote_follows': remote_follows,
+            'pending_deliveries': pending_deliveries,
+            'failed_deliveries': failed_deliveries,
+            'delivered_count': delivered_count,
+        },
+        'rate_limiting': {
+            'domains_tracked': len(_domain_last_request),
+        },
+        'endpoints': {
+            'actor': '/api/v1/activitypub/actor/<username>',
+            'inbox': '/api/v1/activitypub/inbox',
+            'outbox': '/api/v1/activitypub/actor/<username>/outbox',
+            'objects': '/api/v1/activitypub/objects/<id>',
+            'webfinger': '/.well-known/webfinger?resource=acct:user@domain',
+            'nodeinfo': '/.well-known/nodeinfo',
+        },
     })
