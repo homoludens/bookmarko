@@ -6,7 +6,7 @@ services:
     container_name: flaskmarks-app
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://flaskmarks:${POSTGRES_PASSWORD:-flaskmarks}@db:5432/flaskmarks
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-change-me-in-production}
