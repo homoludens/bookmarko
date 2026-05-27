@@ -24,6 +24,11 @@ from flask_login import login_required
 from flaskmarks.core.extensions import db, bcrypt
 from flaskmarks.forms import UserRegisterForm, UserProfileForm
 from flaskmarks.models import User
+from flaskmarks.models.follow import Follow
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.backends import default_backend
 
 profile = Blueprint('profile', __name__)
 
@@ -83,7 +88,9 @@ def userprofile():
         api_token=api_token,
         token_validity_hours=TOKEN_VALIDITY // 3600,
         bookmarklet=bookmarklet,
-        server_url=server_url
+        server_url=server_url,
+        followers_count=Follow.query.filter_by(followed_id=g.user.id, status='accepted').count(),
+        following_count=Follow.query.filter_by(follower_id=g.user.id, status='accepted').count(),
     )
 
 
@@ -133,6 +140,38 @@ def register():
         try:
             db.session.add(u)
             db.session.commit()
+
+            # Generate ActivityPub actor keys and set federation fields
+            key = rsa.generate_private_key(
+                public_exponent=65537,
+                key_size=4096,
+                backend=default_backend()
+            )
+            private_pem = key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=serialization.NoEncryption()
+            ).decode('utf-8')
+            public_pem = key.public_key().public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            ).decode('utf-8')
+
+            domain = request.host_url.rstrip('/')
+            username = u.username
+            actor_url = f"{domain}/api/v1/activitypub/actor/{username}"
+
+            u.actor_id = actor_url
+            u.private_key_pem = private_pem
+            u.public_key_pem = public_pem
+            u.inbox_url = f"{actor_url}/inbox"
+            u.outbox_url = f"{actor_url}/outbox"
+            u.followers_url = f"{actor_url}/followers"
+            u.following_url = f"{actor_url}/following"
+
+            db.session.add(u)
+            db.session.commit()
+
             flash(
                 f'New user "{form.username.data}" registered.',
                 category='success'

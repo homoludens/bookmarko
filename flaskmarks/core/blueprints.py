@@ -21,15 +21,19 @@ def register_blueprints(app: Flask) -> None:
     from flaskmarks.views.tags import tags
     from flaskmarks.views.marks import marks
     from flaskmarks.views.chat import chat
+    from flaskmarks.views.federation import federation
     from flaskmarks.api import api_v1
     from flaskmarks.api.docs import swagger_ui_blueprint, api_spec
+    from flaskmarks.api.activitypub import activitypub
 
     app.register_blueprint(profile)
     app.register_blueprint(auth)
     app.register_blueprint(tags)
     app.register_blueprint(marks)
     app.register_blueprint(chat)
+    app.register_blueprint(federation)
     app.register_blueprint(api_v1)
+    app.register_blueprint(activitypub)
     
     # API documentation
     app.register_blueprint(api_spec)
