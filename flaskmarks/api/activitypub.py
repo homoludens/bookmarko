@@ -284,36 +284,45 @@ def actor_following(username: str):
 
 @activitypub.route('/api/v1/activitypub/objects/<int:mark_id>')
 def bookmark_object(mark_id: int):
-    """Return ActivityPub Article object for a public bookmark."""
-    from flaskmarks.models import Mark
+    """Return an ActivityPub Object representation of a bookmark.
+
+    Only public bookmarks are exposed. Private bookmarks return 404.
+    """
+    from flaskmarks.models import Mark, User
 
     mark = Mark.query.get(mark_id)
     if not mark or mark.visibility != 'public':
         abort(404)
 
-    tags_list = []
-    for tag in (mark.tags or []):
-        tags_list.append({
-            'type': 'Hashtag',
-            'name': f'#{tag.title}',
-        })
+    # Build tags array
+    tags = []
+    if mark.tags:
+        for tag in mark.tags:
+            tags.append({
+                'type': 'Hashtag',
+                'href': f'{request.host_url.rstrip("/")}/tags/{tag.title}',
+                'name': f'#{tag.title}',
+            })
 
-    base_url = request.host_url.rstrip('/')
-    doc = {
+    # Build the Article object
+    obj = {
         '@context': 'https://www.w3.org/ns/activitystreams',
-        'id': f'{base_url}/api/v1/activitypub/objects/{mark.id}',
+        'id': f'{request.host_url.rstrip("/")}/api/v1/activitypub/objects/{mark.id}',
         'type': 'Article',
-        'attributedTo': mark.owner.actor_id,
+        'attributedTo': mark.owner.actor_id if mark.owner and mark.owner.actor_id else None,
         'name': mark.title,
-        'url': mark.url,
         'content': mark.description or '',
+        'url': mark.url,
         'published': mark.created.isoformat() if mark.created else None,
         'updated': mark.updated.isoformat() if mark.updated else None,
-        'tag': tags_list,
+        'to': ['https://www.w3.org/ns/activitystreams#Public'],
     }
+    if tags:
+        obj['tag'] = tags
 
-    response = jsonify(doc)
-    response.content_type = 'application/activity+json'
+    response = jsonify(obj)
+    if request.accept_mimetypes.best in ('application/activity+json', 'application/ld+json'):
+        response.content_type = 'application/activity+json'
     return response
 
 
