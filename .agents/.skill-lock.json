@@ -1,0 +1,15 @@
+{
+  "version": 3,
+  "skills": {
+    "code-reviewer": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/jeffallan/claude-skills.git",
+      "skillPath": "skills/code-reviewer/SKILL.md",
+      "skillFolderHash": "c63068de74482c9a26534c9f384f434ab6362eda",
+      "installedAt": "2026-02-19T10:23:02.209Z",
+      "updatedAt": "2026-02-19T10:23:02.209Z"
+    }
+  },
+  "dismissed": {}
+}

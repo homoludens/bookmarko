@@ -10,6 +10,7 @@ CLI commands:
     flask drop-db       - Drop database tables  
     flask create-user   - Create a new user
     flask list-users    - List all users
+    flask change-password <username>  - Change a user's password
     flask import-marks  - Import bookmarks from file
     flask db init       - Initialize migrations
     flask db migrate    - Create migration

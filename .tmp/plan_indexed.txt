@@ -1,0 +1,12 @@
+QUERY PLAN
+|--CO-ROUTINE c
+|  |--SEARCH m USING COVERING INDEX ix_marks_owner_id (owner_id=?)
+|  |--SEARCH mt USING COVERING INDEX ix_marks_tags_left_right (left_id=?)
+|  |--SEARCH t2 USING INTEGER PRIMARY KEY (rowid=?)
+|  `--USE TEMP B-TREE FOR GROUP BY
+|--SCAN c
+|--SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
+|--CORRELATED SCALAR SUBQUERY 2
+|  |--SEARCH mt2 USING INDEX ix_marks_tags_right_id (right_id=?)
+|  `--SEARCH m2 USING COVERING INDEX ix_marks_owner_id (owner_id=? AND rowid=?)
+`--USE TEMP B-TREE FOR ORDER BY

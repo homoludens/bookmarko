@@ -82,6 +82,25 @@ def register_cli(app: Flask) -> None:
             last_logged = user.last_logged.strftime('%Y-%m-%d %H:%M') if user.last_logged else 'Never'
             click.echo(f"{user.id:<5} {user.username:<20} {user.email:<30} {last_logged:<20}")
     
+    @app.cli.command("change-password")
+    @click.argument("username")
+    @click.option("--password", prompt=True, hide_input=True,
+                  confirmation_prompt=True, help="New password for the user")
+    def change_password(username: str, password: str):
+        """Change a user's password."""
+        from flaskmarks.core.extensions import db, bcrypt
+        from flaskmarks.models import User
+
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            click.echo(f"Error: User '{username}' not found.")
+            return
+
+        user.password = bcrypt.generate_password_hash(password).decode('utf-8')
+        db.session.add(user)
+        db.session.commit()
+        click.echo(f"Password for user '{username}' changed successfully.")
+
     @app.cli.command("import-marks")
     @click.argument("filepath", type=click.Path(exists=True))
     @click.option("--user-id", type=int, required=True, help="User ID to import marks for")

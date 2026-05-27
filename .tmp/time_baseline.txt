@@ -1,0 +1,1 @@
+sh -c  sh "$QUERY"  13.89s user 0.30s system 99% cpu 14.239 total
