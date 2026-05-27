@@ -50,6 +50,9 @@ class UserProfileForm(UserRegisterForm):
     theme = SelectField('Theme',
                         choices=[('default', 'Default'),
                                  ('delicious', 'Delicious (Classic)')])
+    default_bookmark_visibility = SelectField('Default bookmark visibility',
+                                              choices=[('private', 'Private'), ('public', 'Public')],
+                                              default='private')
     submit_button = SubmitField('Update')
 
 

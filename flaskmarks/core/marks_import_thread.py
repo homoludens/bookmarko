@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 import requests
 import tldextract
 from flask import current_app
-from newspaper import Article, ArticleBinaryDataException
+from newspaper import Article, ArticleException
 from readability.readability import Document
 
 from flaskmarks.core.extensions import db
@@ -96,7 +96,7 @@ def fetch_url_metadata(url: str) -> dict[str, Any] | None:
 
     try:
         article.download()
-    except ArticleBinaryDataException:
+    except ArticleException:
         print(f"URL {url} is binary data")
         return m
 
@@ -282,7 +282,7 @@ class MarksImportThread(Thread):
 
         try:
             article.download()
-        except ArticleBinaryDataException:
+        except ArticleException:
             print(f"URL {url} is binary data")
 
         try:

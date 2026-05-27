@@ -6,6 +6,13 @@
             <a class="list-group-item list-group-item-action clickIncrement" href="{{ url_for('marks.mark_redirect', id=mark.id) }}" target="_blank" data-id="{{ mark.id }}" data-url="/mark/inc" rel="noreferrer">
                 <span class="badge bg-secondary">{{ mark.clicks }}</span>
                 <i class="bi bi-link-45deg"></i>
+                {% if g.user == mark.owner %}
+                    {% if mark.visibility == 'public' %}
+                        <i class="bi bi-globe2 text-info" title="Public"></i>
+                    {% else %}
+                        <i class="bi bi-lock text-muted" title="Private"></i>
+                    {% endif %}
+                {% endif %}
                 {{ mark.title|truncate(82) }}
             </a>
             {% elif mark.type in mark.valid_feed_types %}

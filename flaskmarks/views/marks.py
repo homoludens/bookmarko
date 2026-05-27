@@ -25,7 +25,7 @@ from datetime import datetime
 from urllib.parse import urlparse, urljoin
 import feedparser
 from typing import Iterable
-from newspaper import Article, ArticleBinaryDataException
+from newspaper import Article
 #from gensim.summarization import keywords
 from werkzeug.utils import secure_filename
 from bs4 import BeautifulSoup
@@ -270,6 +270,10 @@ def new_mark(type):
         m = Mark(u.id)
         form.populate_obj(m)
         m.type = type
+
+        # Set visibility from user default if form doesn't have it
+        if not hasattr(form, 'visibility') or not form.visibility.data:
+            m.visibility = u.default_bookmark_visibility
 
         # if no title we will get title and text
         if not form.title.data:

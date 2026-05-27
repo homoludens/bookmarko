@@ -50,6 +50,7 @@ def serialize_mark(mark: Mark, include_html: bool = False) -> dict:
         'description': mark.description,
         'url': mark.url,
         'clicks': mark.clicks,
+        'visibility': mark.visibility,
         'last_clicked': serialize_datetime(mark.last_clicked),
         'created': serialize_datetime(mark.created),
         'updated': serialize_datetime(mark.updated),

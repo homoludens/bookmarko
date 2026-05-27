@@ -70,6 +70,28 @@ def list_marks():
     })
 
 
+@api_v1.route('/marks/visible', methods=['GET'])
+@token_required
+def list_public_marks():
+    """List public marks for a given user (for public profile/federation)."""
+    from flaskmarks.models import User
+    username = request.args.get('username', '')
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return error_response('User not found', 404)
+
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('per_page', user.per_page, type=int), 100)
+
+    query = user.my_marks().filter(Mark.visibility == 'public')
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
+    return api_response({
+        'marks': serialize_mark_list(pagination.items),
+        'pagination': serialize_pagination(pagination)
+    })
+
+
 @api_v1.route('/marks/<int:mark_id>', methods=['GET'])
 @token_required
 def get_mark(mark_id: int):
@@ -149,6 +171,7 @@ def create_mark():
     mark.title = data['title']
     mark.url = data['url']
     mark.description = data.get('description')
+    mark.visibility = data.get('visibility', user.default_bookmark_visibility)
 
     # Process tags
     tag_titles = data.get('tags', [])

@@ -78,6 +78,9 @@ class MarkForm(Form):
                     filters=[strip_filter])
     tags = TagListField('Tags',
                         [validators.Length(min=0, max=255)])
+    visibility = SelectField('Visibility',
+                             choices=[('private', 'Private'), ('public', 'Public')],
+                             default='private')
     submit_button = SubmitField('Save')
 
 
